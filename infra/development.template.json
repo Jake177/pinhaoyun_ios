@@ -1,0 +1,1759 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Isolated PinHaoYun iOS development resources; no production mutations",
+  "Parameters": {
+    "ArtifactBucket": {
+      "Type": "String"
+    },
+    "ArtifactPrefix": {
+      "Type": "String"
+    },
+    "MapboxToken": {
+      "Type": "String",
+      "NoEcho": true,
+      "Default": ""
+    }
+  },
+  "Resources": {
+    "Media": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "pinhaoyun-ios-dev-media",
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "email",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "sk",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "timelinePk",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "timelineSk",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "email",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "sk",
+            "KeyType": "RANGE"
+          }
+        ],
+        "SSESpecification": {
+          "SSEEnabled": true
+        },
+        "TimeToLiveSpecification": {
+          "AttributeName": "expiresAt",
+          "Enabled": true
+        },
+        "GlobalSecondaryIndexes": [
+          {
+            "IndexName": "TimelineIndex",
+            "KeySchema": [
+              {
+                "AttributeName": "timelinePk",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "timelineSk",
+                "KeyType": "RANGE"
+              }
+            ],
+            "Projection": {
+              "ProjectionType": "ALL"
+            }
+          }
+        ]
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "Deletions": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": "pinhaoyun-ios-dev-deletions",
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "requestId",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "requestId",
+            "KeyType": "HASH"
+          }
+        ],
+        "SSESpecification": {
+          "SSEEnabled": true
+        },
+        "TimeToLiveSpecification": {
+          "AttributeName": "expiresAt",
+          "Enabled": true
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "MediaDeleteDLQ": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "pinhaoyun-ios-dev-mediadelete-dlq",
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true
+      }
+    },
+    "MediaDeleteQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "pinhaoyun-ios-dev-mediadelete",
+        "VisibilityTimeout": 1800,
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "MediaDeleteDLQ",
+              "Arn"
+            ]
+          },
+          "maxReceiveCount": 5
+        }
+      }
+    },
+    "LocationDLQ": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "pinhaoyun-ios-dev-location-dlq",
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true
+      }
+    },
+    "LocationQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "pinhaoyun-ios-dev-location",
+        "VisibilityTimeout": 1800,
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "LocationDLQ",
+              "Arn"
+            ]
+          },
+          "maxReceiveCount": 5
+        }
+      }
+    },
+    "AccountDeleteDLQ": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "pinhaoyun-ios-dev-accountdelete-dlq",
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true
+      }
+    },
+    "AccountDeleteQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": "pinhaoyun-ios-dev-accountdelete",
+        "VisibilityTimeout": 1800,
+        "MessageRetentionPeriod": 1209600,
+        "SqsManagedSseEnabled": true,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "AccountDeleteDLQ",
+              "Arn"
+            ]
+          },
+          "maxReceiveCount": 5
+        }
+      }
+    },
+    "ProcessingRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "pinhaoyun-ios-dev-processingrole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "isolated-development",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan",
+                    "dynamodb:TransactWriteItems",
+                    "dynamodb:BatchWriteItem"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Media",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": "${Media.Arn}/index/*"
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Deletions",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:DeleteObjectVersion",
+                    "s3:ListBucket",
+                    "s3:ListBucketVersions",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:AbortMultipartUpload",
+                    "s3:ListMultipartUploadParts"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724/*",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724/*",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724/*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage",
+                    "sqs:SendMessageBatch",
+                    "sqs:ReceiveMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes",
+                    "sqs:ChangeMessageVisibility"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "MediaDeleteQueue",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "LocationQueue",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "AccountDeleteQueue",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:ap-southeast-2:883086653724:log-group:/aws/lambda/pinhaoyun-ios-dev-*:*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "PostConfirmationLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pinhaoyun-ios-dev-postConfirmation",
+        "RetentionInDays": 30
+      }
+    },
+    "PostConfirmation": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "pinhaoyun-ios-dev-postConfirmation",
+        "Runtime": "nodejs24.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Timeout": 30,
+        "Role": {
+          "Fn::GetAtt": [
+            "ProcessingRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Fn::Sub": "${ArtifactPrefix}/postConfirmation.zip"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ENV": "development",
+            "VIDEOS_TABLE": {
+              "Ref": "Media"
+            },
+            "USERS_TABLE": {
+              "Ref": "Media"
+            },
+            "TIMELINE_INDEX_NAME": "TimelineIndex",
+            "S3_ORIGINAL_BUCKET": "pinhaoyun-ios-dev-original-883086653724",
+            "S3_THUMBNAIL_BUCKET": "pinhaoyun-ios-dev-thumbnail-883086653724",
+            "S3_PROFILE_BUCKET": "pinhaoyun-ios-dev-profile-883086653724",
+            "LOCATION_ENRICH_QUEUE_URL": {
+              "Ref": "LocationQueue"
+            },
+            "VIDEOS_DELETE_QUEUE_URL": {
+              "Ref": "MediaDeleteQueue"
+            },
+            "ACCOUNT_DELETE_QUEUE_URL": {
+              "Ref": "AccountDeleteQueue"
+            },
+            "ACCOUNT_DELETIONS_TABLE": {
+              "Ref": "Deletions"
+            },
+            "DELETION_QUIESCENCE_SECONDS": "300",
+            "MAPBOX_TOKEN": {
+              "Ref": "MapboxToken"
+            },
+            "PRESIGN_TTL_SECONDS": "900"
+          }
+        }
+      },
+      "DependsOn": "PostConfirmationLog"
+    },
+    "PhotoIngestLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pinhaoyun-ios-dev-photoIngest",
+        "RetentionInDays": 30
+      }
+    },
+    "PhotoIngest": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "pinhaoyun-ios-dev-photoIngest",
+        "Runtime": "nodejs24.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Timeout": 120,
+        "Role": {
+          "Fn::GetAtt": [
+            "ProcessingRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Fn::Sub": "${ArtifactPrefix}/photoIngest.zip"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ENV": "development",
+            "VIDEOS_TABLE": {
+              "Ref": "Media"
+            },
+            "USERS_TABLE": {
+              "Ref": "Media"
+            },
+            "TIMELINE_INDEX_NAME": "TimelineIndex",
+            "S3_ORIGINAL_BUCKET": "pinhaoyun-ios-dev-original-883086653724",
+            "S3_THUMBNAIL_BUCKET": "pinhaoyun-ios-dev-thumbnail-883086653724",
+            "S3_PROFILE_BUCKET": "pinhaoyun-ios-dev-profile-883086653724",
+            "LOCATION_ENRICH_QUEUE_URL": {
+              "Ref": "LocationQueue"
+            },
+            "VIDEOS_DELETE_QUEUE_URL": {
+              "Ref": "MediaDeleteQueue"
+            },
+            "ACCOUNT_DELETE_QUEUE_URL": {
+              "Ref": "AccountDeleteQueue"
+            },
+            "ACCOUNT_DELETIONS_TABLE": {
+              "Ref": "Deletions"
+            },
+            "DELETION_QUIESCENCE_SECONDS": "300",
+            "MAPBOX_TOKEN": {
+              "Ref": "MapboxToken"
+            },
+            "PRESIGN_TTL_SECONDS": "900",
+            "MAGICK_HOME": "/opt",
+            "LD_LIBRARY_PATH": "/opt/lib",
+            "MAGICK_CONFIGURE_PATH": "/opt/etc/ImageMagick-7",
+            "MAGICK_CODER_MODULE_PATH": "/opt/lib/ImageMagick-7.1.1/modules-Q16HDRI/coders"
+          }
+        },
+        "Layers": [
+          "arn:aws:lambda:ap-southeast-2:883086653724:layer:ImageMagick:4"
+        ]
+      },
+      "DependsOn": "PhotoIngestLog"
+    },
+    "TranscodeVideoLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pinhaoyun-ios-dev-transcodeVideo",
+        "RetentionInDays": 30
+      }
+    },
+    "TranscodeVideo": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "pinhaoyun-ios-dev-transcodeVideo",
+        "Runtime": "nodejs24.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "index.handler",
+        "MemorySize": 2048,
+        "Timeout": 200,
+        "Role": {
+          "Fn::GetAtt": [
+            "ProcessingRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Fn::Sub": "${ArtifactPrefix}/transcodeVideo.zip"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ENV": "development",
+            "VIDEOS_TABLE": {
+              "Ref": "Media"
+            },
+            "USERS_TABLE": {
+              "Ref": "Media"
+            },
+            "TIMELINE_INDEX_NAME": "TimelineIndex",
+            "S3_ORIGINAL_BUCKET": "pinhaoyun-ios-dev-original-883086653724",
+            "S3_THUMBNAIL_BUCKET": "pinhaoyun-ios-dev-thumbnail-883086653724",
+            "S3_PROFILE_BUCKET": "pinhaoyun-ios-dev-profile-883086653724",
+            "LOCATION_ENRICH_QUEUE_URL": {
+              "Ref": "LocationQueue"
+            },
+            "VIDEOS_DELETE_QUEUE_URL": {
+              "Ref": "MediaDeleteQueue"
+            },
+            "ACCOUNT_DELETE_QUEUE_URL": {
+              "Ref": "AccountDeleteQueue"
+            },
+            "ACCOUNT_DELETIONS_TABLE": {
+              "Ref": "Deletions"
+            },
+            "DELETION_QUIESCENCE_SECONDS": "300",
+            "MAPBOX_TOKEN": {
+              "Ref": "MapboxToken"
+            },
+            "PRESIGN_TTL_SECONDS": "900"
+          }
+        },
+        "Layers": [
+          "arn:aws:lambda:ap-southeast-2:883086653724:layer:ffmpeg:1"
+        ]
+      },
+      "DependsOn": "TranscodeVideoLog"
+    },
+    "EnrichLocationLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pinhaoyun-ios-dev-enrichLocation",
+        "RetentionInDays": 30
+      }
+    },
+    "EnrichLocation": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "pinhaoyun-ios-dev-enrichLocation",
+        "Runtime": "nodejs24.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Timeout": 30,
+        "Role": {
+          "Fn::GetAtt": [
+            "ProcessingRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Fn::Sub": "${ArtifactPrefix}/enrichLocation.zip"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ENV": "development",
+            "VIDEOS_TABLE": {
+              "Ref": "Media"
+            },
+            "USERS_TABLE": {
+              "Ref": "Media"
+            },
+            "TIMELINE_INDEX_NAME": "TimelineIndex",
+            "S3_ORIGINAL_BUCKET": "pinhaoyun-ios-dev-original-883086653724",
+            "S3_THUMBNAIL_BUCKET": "pinhaoyun-ios-dev-thumbnail-883086653724",
+            "S3_PROFILE_BUCKET": "pinhaoyun-ios-dev-profile-883086653724",
+            "LOCATION_ENRICH_QUEUE_URL": {
+              "Ref": "LocationQueue"
+            },
+            "VIDEOS_DELETE_QUEUE_URL": {
+              "Ref": "MediaDeleteQueue"
+            },
+            "ACCOUNT_DELETE_QUEUE_URL": {
+              "Ref": "AccountDeleteQueue"
+            },
+            "ACCOUNT_DELETIONS_TABLE": {
+              "Ref": "Deletions"
+            },
+            "DELETION_QUIESCENCE_SECONDS": "300",
+            "MAPBOX_TOKEN": {
+              "Ref": "MapboxToken"
+            },
+            "PRESIGN_TTL_SECONDS": "900"
+          }
+        }
+      },
+      "DependsOn": "EnrichLocationLog"
+    },
+    "DeleteVideoLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pinhaoyun-ios-dev-deleteVideo",
+        "RetentionInDays": 30
+      }
+    },
+    "DeleteVideo": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "pinhaoyun-ios-dev-deleteVideo",
+        "Runtime": "nodejs24.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Timeout": 60,
+        "Role": {
+          "Fn::GetAtt": [
+            "ProcessingRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Fn::Sub": "${ArtifactPrefix}/deleteVideo.zip"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ENV": "development",
+            "VIDEOS_TABLE": {
+              "Ref": "Media"
+            },
+            "USERS_TABLE": {
+              "Ref": "Media"
+            },
+            "TIMELINE_INDEX_NAME": "TimelineIndex",
+            "S3_ORIGINAL_BUCKET": "pinhaoyun-ios-dev-original-883086653724",
+            "S3_THUMBNAIL_BUCKET": "pinhaoyun-ios-dev-thumbnail-883086653724",
+            "S3_PROFILE_BUCKET": "pinhaoyun-ios-dev-profile-883086653724",
+            "LOCATION_ENRICH_QUEUE_URL": {
+              "Ref": "LocationQueue"
+            },
+            "VIDEOS_DELETE_QUEUE_URL": {
+              "Ref": "MediaDeleteQueue"
+            },
+            "ACCOUNT_DELETE_QUEUE_URL": {
+              "Ref": "AccountDeleteQueue"
+            },
+            "ACCOUNT_DELETIONS_TABLE": {
+              "Ref": "Deletions"
+            },
+            "DELETION_QUIESCENCE_SECONDS": "300",
+            "MAPBOX_TOKEN": {
+              "Ref": "MapboxToken"
+            },
+            "PRESIGN_TTL_SECONDS": "900"
+          }
+        }
+      },
+      "DependsOn": "DeleteVideoLog"
+    },
+    "DeleteAccountLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pinhaoyun-ios-dev-deleteAccount",
+        "RetentionInDays": 30
+      }
+    },
+    "DeleteAccount": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "pinhaoyun-ios-dev-deleteAccount",
+        "Runtime": "nodejs24.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "index.handler",
+        "MemorySize": 512,
+        "Timeout": 900,
+        "Role": {
+          "Fn::GetAtt": [
+            "AccountRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Fn::Sub": "${ArtifactPrefix}/deleteAccount.zip"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ENV": "development",
+            "VIDEOS_TABLE": {
+              "Ref": "Media"
+            },
+            "USERS_TABLE": {
+              "Ref": "Media"
+            },
+            "TIMELINE_INDEX_NAME": "TimelineIndex",
+            "S3_ORIGINAL_BUCKET": "pinhaoyun-ios-dev-original-883086653724",
+            "S3_THUMBNAIL_BUCKET": "pinhaoyun-ios-dev-thumbnail-883086653724",
+            "S3_PROFILE_BUCKET": "pinhaoyun-ios-dev-profile-883086653724",
+            "LOCATION_ENRICH_QUEUE_URL": {
+              "Ref": "LocationQueue"
+            },
+            "VIDEOS_DELETE_QUEUE_URL": {
+              "Ref": "MediaDeleteQueue"
+            },
+            "ACCOUNT_DELETE_QUEUE_URL": {
+              "Ref": "AccountDeleteQueue"
+            },
+            "ACCOUNT_DELETIONS_TABLE": {
+              "Ref": "Deletions"
+            },
+            "DELETION_QUIESCENCE_SECONDS": "300",
+            "MAPBOX_TOKEN": {
+              "Ref": "MapboxToken"
+            },
+            "PRESIGN_TTL_SECONDS": "900",
+            "COGNITO_USER_POOL_ID": {
+              "Ref": "UserPool"
+            }
+          }
+        }
+      },
+      "DependsOn": "DeleteAccountLog"
+    },
+    "CleanupUploadsLog": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/pinhaoyun-ios-dev-cleanupUploads",
+        "RetentionInDays": 30
+      }
+    },
+    "CleanupUploads": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "pinhaoyun-ios-dev-cleanupUploads",
+        "Runtime": "nodejs24.x",
+        "Architectures": [
+          "x86_64"
+        ],
+        "Handler": "index.handler",
+        "MemorySize": 128,
+        "Timeout": 120,
+        "Role": {
+          "Fn::GetAtt": [
+            "ProcessingRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "S3Key": {
+            "Fn::Sub": "${ArtifactPrefix}/cleanupUploads.zip"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "APP_ENV": "development",
+            "VIDEOS_TABLE": {
+              "Ref": "Media"
+            },
+            "USERS_TABLE": {
+              "Ref": "Media"
+            },
+            "TIMELINE_INDEX_NAME": "TimelineIndex",
+            "S3_ORIGINAL_BUCKET": "pinhaoyun-ios-dev-original-883086653724",
+            "S3_THUMBNAIL_BUCKET": "pinhaoyun-ios-dev-thumbnail-883086653724",
+            "S3_PROFILE_BUCKET": "pinhaoyun-ios-dev-profile-883086653724",
+            "LOCATION_ENRICH_QUEUE_URL": {
+              "Ref": "LocationQueue"
+            },
+            "VIDEOS_DELETE_QUEUE_URL": {
+              "Ref": "MediaDeleteQueue"
+            },
+            "ACCOUNT_DELETE_QUEUE_URL": {
+              "Ref": "AccountDeleteQueue"
+            },
+            "ACCOUNT_DELETIONS_TABLE": {
+              "Ref": "Deletions"
+            },
+            "DELETION_QUIESCENCE_SECONDS": "300",
+            "MAPBOX_TOKEN": {
+              "Ref": "MapboxToken"
+            },
+            "PRESIGN_TTL_SECONDS": "900"
+          }
+        }
+      },
+      "DependsOn": "CleanupUploadsLog"
+    },
+    "UserPool": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "UserPoolName": "pinhaoyun-ios-dev",
+        "UsernameAttributes": [
+          "email"
+        ],
+        "AutoVerifiedAttributes": [
+          "email"
+        ],
+        "UsernameConfiguration": {
+          "CaseSensitive": false
+        },
+        "Policies": {
+          "PasswordPolicy": {
+            "MinimumLength": 8,
+            "RequireUppercase": true,
+            "RequireLowercase": true,
+            "RequireNumbers": true,
+            "RequireSymbols": true
+          }
+        },
+        "Schema": [
+          {
+            "Name": "email",
+            "AttributeDataType": "String",
+            "Required": true,
+            "Mutable": true
+          },
+          {
+            "Name": "given_name",
+            "AttributeDataType": "String",
+            "Required": true,
+            "Mutable": true
+          },
+          {
+            "Name": "family_name",
+            "AttributeDataType": "String",
+            "Required": true,
+            "Mutable": true
+          },
+          {
+            "Name": "preferred_username",
+            "AttributeDataType": "String",
+            "Required": true,
+            "Mutable": true
+          },
+          {
+            "Name": "gender",
+            "AttributeDataType": "String",
+            "Required": true,
+            "Mutable": true
+          }
+        ],
+        "LambdaConfig": {
+          "PostConfirmation": {
+            "Fn::GetAtt": [
+              "PostConfirmation",
+              "Arn"
+            ]
+          }
+        },
+        "AccountRecoverySetting": {
+          "RecoveryMechanisms": [
+            {
+              "Name": "verified_email",
+              "Priority": 1
+            }
+          ]
+        }
+      }
+    },
+    "PostConfirmationPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PostConfirmation"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "UserPool",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "WebClient": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "UserPoolId": {
+          "Ref": "UserPool"
+        },
+        "ClientName": "pinhaoyun-ios-dev-web",
+        "GenerateSecret": true,
+        "ExplicitAuthFlows": [
+          "ALLOW_USER_PASSWORD_AUTH",
+          "ALLOW_REFRESH_TOKEN_AUTH",
+          "ALLOW_USER_SRP_AUTH"
+        ],
+        "RefreshTokenValidity": 30,
+        "AccessTokenValidity": 1,
+        "IdTokenValidity": 1,
+        "TokenValidityUnits": {
+          "RefreshToken": "days",
+          "AccessToken": "hours",
+          "IdToken": "hours"
+        },
+        "EnableTokenRevocation": true,
+        "PreventUserExistenceErrors": "ENABLED"
+      }
+    },
+    "WebSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Name": "pinhaoyun/ios-dev/web-cognito",
+        "Description": "Cognito confidential client secret; provisioned without logging its contents",
+        "GenerateSecretString": {
+          "PasswordLength": 32
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "MobileClient": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "UserPoolId": {
+          "Ref": "UserPool"
+        },
+        "ClientName": "pinhaoyun-ios-dev-mobile",
+        "GenerateSecret": true,
+        "ExplicitAuthFlows": [
+          "ALLOW_USER_PASSWORD_AUTH",
+          "ALLOW_REFRESH_TOKEN_AUTH",
+          "ALLOW_USER_SRP_AUTH"
+        ],
+        "RefreshTokenValidity": 30,
+        "AccessTokenValidity": 1,
+        "IdTokenValidity": 1,
+        "TokenValidityUnits": {
+          "RefreshToken": "days",
+          "AccessToken": "hours",
+          "IdToken": "hours"
+        },
+        "EnableTokenRevocation": true,
+        "PreventUserExistenceErrors": "ENABLED"
+      }
+    },
+    "MobileSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "Name": "pinhaoyun/ios-dev/mobile-cognito",
+        "Description": "Cognito confidential client secret; provisioned without logging its contents",
+        "GenerateSecretString": {
+          "PasswordLength": 32
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "AccountRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "pinhaoyun-ios-dev-accountrole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "isolated-development",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan",
+                    "dynamodb:TransactWriteItems",
+                    "dynamodb:BatchWriteItem"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Media",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": "${Media.Arn}/index/*"
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Deletions",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:DeleteObjectVersion",
+                    "s3:ListBucket",
+                    "s3:ListBucketVersions",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:AbortMultipartUpload",
+                    "s3:ListMultipartUploadParts"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724/*",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724/*",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724/*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage",
+                    "sqs:SendMessageBatch",
+                    "sqs:ReceiveMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes",
+                    "sqs:ChangeMessageVisibility"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "MediaDeleteQueue",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "LocationQueue",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "AccountDeleteQueue",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:ap-southeast-2:883086653724:log-group:/aws/lambda/pinhaoyun-ios-dev-*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cognito-idp:AdminDisableUser",
+                    "cognito-idp:AdminUserGlobalSignOut",
+                    "cognito-idp:AdminDeleteUser"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "UserPool",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "SSRRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "pinhaoyun-ios-dev-ssrrole",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "amplify.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "isolated-development",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan",
+                    "dynamodb:TransactWriteItems",
+                    "dynamodb:BatchWriteItem"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Media",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::Sub": "${Media.Arn}/index/*"
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Deletions",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:DeleteObjectVersion",
+                    "s3:ListBucket",
+                    "s3:ListBucketVersions",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:AbortMultipartUpload",
+                    "s3:ListMultipartUploadParts"
+                  ],
+                  "Resource": [
+                    "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724/*",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724/*",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724",
+                    "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724/*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage",
+                    "sqs:SendMessageBatch",
+                    "sqs:ReceiveMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueAttributes",
+                    "sqs:ChangeMessageVisibility"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "MediaDeleteQueue",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "LocationQueue",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "AccountDeleteQueue",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:ap-southeast-2:883086653724:log-group:/aws/lambda/pinhaoyun-ios-dev-*:*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cognito-idp:AdminDisableUser",
+                    "cognito-idp:AdminUserGlobalSignOut",
+                    "cognito-idp:AdminDeleteUser"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "UserPool",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:GetSecretValue"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "WebSecret"
+                    },
+                    {
+                      "Ref": "MobileSecret"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "PhotoIngestPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PhotoIngest"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "s3.amazonaws.com",
+        "SourceArn": "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724",
+        "SourceAccount": "883086653724"
+      }
+    },
+    "TranscodeVideoPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "TranscodeVideo"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "s3.amazonaws.com",
+        "SourceArn": "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724",
+        "SourceAccount": "883086653724"
+      }
+    },
+    "OriginalBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "pinhaoyun-ios-dev-original-883086653724",
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "abort-stale-multipart",
+              "Status": "Enabled",
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 2
+              }
+            }
+          ]
+        },
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedOrigins": [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "https://feat-mobile-api.dfajjdq9ocxzi.amplifyapp.com"
+              ],
+              "AllowedMethods": [
+                "GET",
+                "PUT",
+                "HEAD"
+              ],
+              "AllowedHeaders": [
+                "*"
+              ],
+              "ExposedHeaders": [
+                "ETag"
+              ],
+              "MaxAge": 3000
+            }
+          ]
+        },
+        "NotificationConfiguration": {
+          "LambdaConfigurations": [
+            {
+              "Event": "s3:ObjectCreated:*",
+              "Function": {
+                "Fn::GetAtt": [
+                  "PhotoIngest",
+                  "Arn"
+                ]
+              },
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "prefix",
+                      "Value": "photo/"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "Event": "s3:ObjectCreated:*",
+              "Function": {
+                "Fn::GetAtt": [
+                  "TranscodeVideo",
+                  "Arn"
+                ]
+              },
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "prefix",
+                      "Value": "video/"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "DependsOn": [
+        "PhotoIngestPermission",
+        "TranscodeVideoPermission"
+      ]
+    },
+    "OriginalBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "OriginalBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724",
+                "arn:aws:s3:::pinhaoyun-ios-dev-original-883086653724/*"
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ThumbnailBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "pinhaoyun-ios-dev-thumbnail-883086653724",
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "abort-stale-multipart",
+              "Status": "Enabled",
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 2
+              }
+            }
+          ]
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "ThumbnailBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ThumbnailBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724",
+                "arn:aws:s3:::pinhaoyun-ios-dev-thumbnail-883086653724/*"
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ProfileBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "pinhaoyun-ios-dev-profile-883086653724",
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "abort-stale-multipart",
+              "Status": "Enabled",
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 2
+              }
+            }
+          ]
+        }
+      },
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain"
+    },
+    "ProfileBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ProfileBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724",
+                "arn:aws:s3:::pinhaoyun-ios-dev-profile-883086653724/*"
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "DeleteVideoSource": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "MediaDeleteQueue",
+            "Arn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "DeleteVideo"
+        },
+        "BatchSize": 1,
+        "Enabled": true
+      }
+    },
+    "EnrichLocationSource": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "LocationQueue",
+            "Arn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "EnrichLocation"
+        },
+        "BatchSize": 1,
+        "Enabled": true
+      }
+    },
+    "DeleteAccountSource": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "AccountDeleteQueue",
+            "Arn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "DeleteAccount"
+        },
+        "BatchSize": 1,
+        "Enabled": true,
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ]
+      }
+    },
+    "DeleteAccountSchedule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "rate(5 minutes)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "DeleteAccount",
+                "Arn"
+              ]
+            },
+            "Id": "DeleteAccount"
+          }
+        ]
+      }
+    },
+    "DeleteAccountSchedulePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "DeleteAccount"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "DeleteAccountSchedule",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "CleanupUploadsSchedule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "rate(5 minutes)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "CleanupUploads",
+                "Arn"
+              ]
+            },
+            "Id": "CleanupUploads"
+          }
+        ]
+      }
+    },
+    "CleanupUploadsSchedulePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CleanupUploads"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CleanupUploadsSchedule",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "DeletionFailureAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "pinhaoyun-ios-dev-deletion-dlq",
+        "Namespace": "AWS/SQS",
+        "MetricName": "ApproximateNumberOfMessagesVisible",
+        "Dimensions": [
+          {
+            "Name": "QueueName",
+            "Value": {
+              "Fn::GetAtt": [
+                "AccountDeleteDLQ",
+                "QueueName"
+              ]
+            }
+          }
+        ],
+        "Statistic": "Maximum",
+        "Period": 300,
+        "EvaluationPeriods": 1,
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "TreatMissingData": "notBreaching"
+      }
+    },
+    "DeletionDeadlineMetric": {
+      "Type": "AWS::Logs::MetricFilter",
+      "Properties": {
+        "LogGroupName": {
+          "Ref": "DeleteAccountLog"
+        },
+        "FilterPattern": "\"Account deletion overdue\"",
+        "MetricTransformations": [
+          {
+            "MetricNamespace": "PinHaoYun/iOS/Dev",
+            "MetricName": "DeletionOverdue",
+            "MetricValue": "1",
+            "DefaultValue": 0
+          }
+        ]
+      }
+    },
+    "DeletionDeadlineAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "pinhaoyun-ios-dev-deletion-overdue",
+        "Namespace": "PinHaoYun/iOS/Dev",
+        "MetricName": "DeletionOverdue",
+        "Statistic": "Sum",
+        "Period": 300,
+        "EvaluationPeriods": 1,
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "TreatMissingData": "notBreaching"
+      }
+    }
+  },
+  "Outputs": {
+    "UserPoolId": {
+      "Value": {
+        "Ref": "UserPool"
+      }
+    },
+    "WebClientId": {
+      "Value": {
+        "Ref": "WebClient"
+      }
+    },
+    "MobileClientId": {
+      "Value": {
+        "Ref": "MobileClient"
+      }
+    },
+    "WebSecretArn": {
+      "Value": {
+        "Ref": "WebSecret"
+      }
+    },
+    "MobileSecretArn": {
+      "Value": {
+        "Ref": "MobileSecret"
+      }
+    },
+    "MediaTable": {
+      "Value": {
+        "Ref": "Media"
+      }
+    },
+    "DeletionsTable": {
+      "Value": {
+        "Ref": "Deletions"
+      }
+    },
+    "OriginalBucket": {
+      "Value": {
+        "Ref": "OriginalBucket"
+      }
+    },
+    "ThumbnailBucket": {
+      "Value": {
+        "Ref": "ThumbnailBucket"
+      }
+    },
+    "ProfileBucket": {
+      "Value": {
+        "Ref": "ProfileBucket"
+      }
+    },
+    "MediaDeleteQueueUrl": {
+      "Value": {
+        "Ref": "MediaDeleteQueue"
+      }
+    },
+    "LocationQueueUrl": {
+      "Value": {
+        "Ref": "LocationQueue"
+      }
+    },
+    "AccountDeleteQueueUrl": {
+      "Value": {
+        "Ref": "AccountDeleteQueue"
+      }
+    },
+    "SSRRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "SSRRole",
+          "Arn"
+        ]
+      }
+    }
+  }
+}

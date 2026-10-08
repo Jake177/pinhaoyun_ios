@@ -1,0 +1,361 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-08T04:27:16.323487Z",
+  "title": "Design System: PinHaoYun iOS",
+  "extensions": {
+    "colorMeta": {
+      "media-badge-text": {
+        "role": "neutral",
+        "displayName": "Media Badge White",
+        "purpose": "Readable Live Photo/video status over imagery."
+      },
+      "media-badge-scrim": {
+        "role": "neutral",
+        "displayName": "Media Badge Scrim",
+        "purpose": "Translucent dark backing for thumbnail status."
+      }
+    },
+    "typographyMeta": {
+      "brand-title": {
+        "displayName": "Brand Title",
+        "purpose": "Authentication brand name.",
+        "nativeTextStyle": ".largeTitle.bold()"
+      },
+      "title2": {
+        "displayName": "Title 2",
+        "purpose": "Placeholder symbols and deletion-receipt status.",
+        "nativeTextStyle": ".title2"
+      },
+      "title2-bold": {
+        "displayName": "Title 2 Bold",
+        "purpose": "Consent and account-deletion introductions.",
+        "nativeTextStyle": ".title2.bold()"
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Date headings, transfer filenames and account identity.",
+        "nativeTextStyle": ".headline"
+      },
+      "subheadline": {
+        "displayName": "Subheadline",
+        "purpose": "Account email and storage summary.",
+        "nativeTextStyle": ".subheadline"
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Forms, explanations, policy reading and ordinary actions.",
+        "nativeTextStyle": ".body or native default"
+      },
+      "footnote": {
+        "displayName": "Footnote",
+        "purpose": "Supporting notes, transfer errors and recovery notices.",
+        "nativeTextStyle": ".footnote"
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Transfer state and completed-byte counter, with monospacedDigit() for bytes.",
+        "nativeTextStyle": ".caption"
+      },
+      "media-badge": {
+        "displayName": "Media Badge",
+        "purpose": "Live Photo marker and video duration.",
+        "nativeTextStyle": ".caption2.bold()"
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [],
+    "native": {
+      "platform": "ios",
+      "framework": "SwiftUI with PhotosUI and AVKit",
+      "minimumOS": "iOS 17",
+      "dimensionUnit": "pt (native points; not web pixels)",
+      "sourceOfTruth": [
+        "App/PinHaoYunApp.swift",
+        "App/Views/AuthView.swift",
+        "App/Views/LibraryView.swift",
+        "App/Views/TransfersView.swift",
+        "App/Views/AccountView.swift",
+        "App/Views/MediaDetailView.swift",
+        "App/Views/PolicyViews.swift",
+        "App/Services/PhotoImporter.swift",
+        "App/Resources/Localizable.xcstrings",
+        "Artwork/AppIcon.svg"
+      ],
+      "semanticColors": [
+        {
+          "name": "interaction-tint",
+          "value": "Color.blue",
+          "source": "App/PinHaoYunApp.swift",
+          "usage": "Root .tint(.blue); inherited by standard interactive controls."
+        },
+        {
+          "name": "transfer-symbol",
+          "value": "Color.accentColor",
+          "source": "App/Views/TransfersView.swift",
+          "usage": "Non-failed transfer symbols; environment/platform resolves the accent."
+        },
+        {
+          "name": "attention",
+          "value": "Color.red",
+          "source": "App/Views/TransfersView.swift; App/Views/AuthView.swift; App/Views/AccountView.swift; App/Views/PolicyViews.swift",
+          "usage": "Errors, failed transfers and account-deletion link; destructive buttons also use native roles."
+        },
+        {
+          "name": "background",
+          "value": "Color(uiColor: .systemBackground) / .background",
+          "source": "App/Views/MediaDetailView.swift; App/Views/LibraryView.swift",
+          "usage": "Original-media ground and pinned date-heading ground."
+        },
+        {
+          "name": "media-placeholder",
+          "value": "Color(uiColor: .secondarySystemBackground)",
+          "source": "App/Views/LibraryView.swift",
+          "usage": "Square thumbnail fallback/loading ground."
+        },
+        {
+          "name": "primary-content",
+          "value": "native default foreground",
+          "source": "App/Views",
+          "usage": "Primary labels and content."
+        },
+        {
+          "name": "secondary-content",
+          "value": ".secondary",
+          "source": "App/Views",
+          "usage": "Supporting text, metadata and fallback symbols."
+        }
+      ],
+      "materials": [
+        {
+          "name": "transfer-explanation",
+          "value": ".bar",
+          "source": "App/Views/TransfersView.swift",
+          "usage": "Bottom safe-area explanation."
+        },
+        {
+          "name": "detail-notice",
+          "value": ".regularMaterial",
+          "source": "App/Views/MediaDetailView.swift",
+          "usage": "Success/recovery notices in bottom safe-area inset."
+        }
+      ],
+      "layout": {
+        "mediaGrid": {
+          "nativeAPI": "GridItem(.adaptive(minimum: 110), spacing: 3)",
+          "minimumCellWidthPt": 110,
+          "rowSpacingRef": "spacing.grid-gap",
+          "columnSpacingRef": "spacing.grid-gap",
+          "aspectRatio": 1,
+          "thumbnailFit": "scaledToFill + clipped",
+          "detailFit": "scaledToFit / scaleAspectFit",
+          "headers": "pinned section headers"
+        },
+        "daySections": {
+          "nativeAPI": "LazyVStack(alignment: .leading, spacing: 20, pinnedViews: [.sectionHeaders])",
+          "spacingRef": "spacing.section-gap"
+        },
+        "dateHeading": {
+          "verticalPaddingRef": "spacing.content-gap",
+          "horizontalPaddingRef": "spacing.stack-gap",
+          "alignment": "leading",
+          "width": "maxWidth: .infinity"
+        },
+        "transferRow": {
+          "verticalPaddingRef": "spacing.transfer-row-padding",
+          "stackSpacingRef": "spacing.content-gap",
+          "filenameLineLimit": 2,
+          "counter": "monospacedDigit()"
+        },
+        "libraryToolbarTargets": {
+          "minimumWidthPt": 44,
+          "minimumHeightPt": 44,
+          "scope": "Explicit filter/add image-label frames in LibraryView; other native targets require runtime verification."
+        },
+        "nativeOwned": [
+          "Safe-area insets",
+          "Form/List row geometry and section insets",
+          "Ordinary .padding()",
+          "Navigation/tab bar metrics",
+          "Button/field corner geometry",
+          "Text-style sizes and line heights"
+        ],
+        "responsiveStrategy": "Available-width adaptive media columns; no authored breakpoints or bespoke tablet split layout."
+      },
+      "components": [
+        {
+          "name": "Primary Add Button",
+          "kind": "button",
+          "description": "System-prominent action in the empty Library.",
+          "swiftUI": "Button(\"Add photos and videos\") { importing = true }.buttonStyle(.borderedProminent)",
+          "source": "App/Views/LibraryView.swift",
+          "states": "Native enabled/disabled/pressed; no custom hover style."
+        },
+        {
+          "name": "Transfer Retry",
+          "kind": "button",
+          "description": "System-bordered retry on a failed transfer.",
+          "swiftUI": "Button(\"Retry\") { manager.retry(record) }.buttonStyle(.bordered)",
+          "source": "App/Views/TransfersView.swift",
+          "states": "Present when record.state == \"failed\"."
+        },
+        {
+          "name": "Form Action",
+          "kind": "button",
+          "description": "Native form-row action with persistent title and trailing busy indicator.",
+          "swiftUI": "Button(action: submit) { HStack { Text(actionTitle); Spacer(); if busy { ProgressView() } } }.disabled(busy || !canSubmit)",
+          "source": "App/Views/AuthView.swift",
+          "states": "Busy or invalid disables submission; system geometry."
+        },
+        {
+          "name": "Email Field",
+          "kind": "input",
+          "description": "Native form TextField with email-specific input behavior.",
+          "swiftUI": "TextField(\"Email\", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()",
+          "source": "App/Views/AuthView.swift",
+          "states": "Native focus and keyboard behavior; errors appear in separate visible sections."
+        },
+        {
+          "name": "Root Tab Navigation",
+          "kind": "nav",
+          "description": "System Library, Transfers and Account tabs; each destination owns a NavigationStack.",
+          "swiftUI": "TabView { LibraryView().tabItem { Label(\"Library\", systemImage: \"photo.on.rectangle\") }; TransfersView().tabItem { Label(\"Transfers\", systemImage: \"arrow.up.arrow.down\") }; AccountView().tabItem { Label(\"Account\", systemImage: \"person.crop.circle\") } }",
+          "source": "App/PinHaoYunApp.swift",
+          "states": "Native selection. Detail hides tabs with .toolbar(.hidden, for: .tabBar)."
+        },
+        {
+          "name": "Media Badge",
+          "kind": "custom",
+          "refersTo": "media-badge",
+          "description": "Non-interactive status capsule at a thumbnail's bottom leading edge.",
+          "swiftUI": "Label(item.isLivePhoto ? \"LIVE\" : duration, systemImage: item.isLivePhoto ? \"livephoto\" : \"play.fill\").font(.caption2.bold()).foregroundStyle(.white).padding(5).background(.black.opacity(0.65), in: Capsule()).padding(5)",
+          "source": "App/Views/LibraryView.swift",
+          "shape": "Capsule() follows rendered height; no fixed radius.",
+          "states": "Visible for videos and Live Photos only; not an action chip."
+        },
+        {
+          "name": "Native Form Sections",
+          "kind": "custom",
+          "description": "System sections for account, authentication, consent, deletion and media information.",
+          "swiftUI": "Form { Section { /* native fields, labels and actions */ } }",
+          "source": "App/Views/AuthView.swift; App/Views/AccountView.swift; App/Views/PolicyViews.swift; App/Views/MediaDetailView.swift",
+          "states": "OS-owned background, insets and corners; no custom card primitive."
+        },
+        {
+          "name": "Transfer Row",
+          "kind": "custom",
+          "refersTo": "transfer-title",
+          "description": "Stable list row with filename, state, bytes, progress and recovery.",
+          "swiftUI": "List { ForEach(visible) { record in VStack(alignment: .leading, spacing: 8) { /* symbol + filename, state + bytes, progress, error, actions */ }.padding(.vertical, 6) } }",
+          "source": "App/Views/TransfersView.swift",
+          "identity": "TransferRecord.id",
+          "states": "Completed/failed/other symbols, text state, unfinished progress, failed Retry and unfinished Cancel upload."
+        }
+      ],
+      "assets": [
+        {
+          "name": "AppIcon",
+          "path": "App/Resources/Assets.xcassets/AppIcon.appiconset/icon.png",
+          "source": "Artwork/AppIcon.svg",
+          "renderer": "scripts/render-icon.mjs",
+          "sizePx": [
+            1024,
+            1024
+          ],
+          "provenance": "Embedded PNG impeccable:prompt metadata records existing vector origin and rasterization.",
+          "usage": "Opaque existing cloud-and-puzzle icon."
+        },
+        {
+          "name": "BrandMark",
+          "path": "App/Resources/Assets.xcassets/BrandMark.imageset/icon.png",
+          "source": "Artwork/AppIcon.svg",
+          "renderer": "scripts/render-icon.mjs",
+          "sizePx": [
+            1024,
+            1024
+          ],
+          "provenance": "Embedded PNG impeccable:prompt metadata records existing vector origin and rasterization.",
+          "usage": "Authentication introduction; 64 × 64 pt, scaledToFit, accessibilityHidden(true)."
+        }
+      ],
+      "localization": {
+        "catalog": "App/Resources/Localizable.xcstrings",
+        "sourceLanguage": "en",
+        "translatedLocale": "zh-Hans",
+        "conventions": [
+          "Localized native keys and String(localized:) for computed UI labels",
+          "Locale-aware dates",
+          "Locale-aware file byte counts",
+          "Filenames and server text remain content"
+        ],
+        "verification": "Runtime coverage and truncation not certified."
+      },
+      "verification": {
+        "basis": "Source and native identity-asset inspection only.",
+        "finishReview": "In progress at documentation time; no QA pass claimed.",
+        "notCertified": [
+          "Simulator/device interaction",
+          "Dark Mode appearance",
+          "Large Dynamic Type layout",
+          "VoiceOver behavior",
+          "Reduce Motion behavior",
+          "Complete runtime localization coverage"
+        ]
+      },
+      "previewLimitations": [
+        "No HTML/CSS approximations are synthesized for system SwiftUI controls; native component definitions above are authoritative.",
+        "Semantic colors and text styles have no fabricated fixed hex/point substitutes in frontmatter.",
+        "No synthetic tonal ramps, shadows, motion curves or breakpoints are promoted into the native system."
+      ]
+    }
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "Native photo timeline",
+    "overview": "PinHaoYun uses the familiar iPhone photo-library grammar: media carries the visual interest, while system navigation, readable labels and persistent state make the interface feel quiet and dependable. Brand expression comes from the existing cloud-and-puzzle mark and one blue interaction tint. System text styles, controls and materials carry the rest of the interface.\n\nThis is a source-derived record of `App/PinHaoYunApp.swift`, `App/Views/` and `App/Services/PhotoImporter.swift`, reconciled with the approved native direction. Dimensions are native points, not web pixels. Frontmatter holds observed fixed values and portable family/weight facts; `.impeccable/design.json` records native semantic colors, Dynamic Type styles and system-owned geometry that the portable token schema cannot express. No fixed substitutes are invented for dynamic native values.\n\nSimulator, hardware, Dark Mode, large Dynamic Type, localization and VoiceOver results are not certified here. Finish verification was still in progress when this source record was written.",
+    "keyCharacteristics": [
+      "Native navigation, forms, pickers, sheets and confirmation dialogs.",
+      "Semantic surfaces and text, with blue interaction and red attention cues.",
+      "Square media crops, close image spacing and chronological headings.",
+      "Dynamic system typography and SF Symbols.",
+      "Explicit loading, transfer, recovery and deletion states."
+    ],
+    "rules": [
+      {
+        "name": "The Semantic Surface Rule",
+        "body": "Retain the native semantic color or material at its existing role; do not replace it with a sampled screenshot hex.",
+        "section": "colors"
+      },
+      {
+        "name": "The State Has Words Rule",
+        "body": "Pair attention color with a state label, explanatory message or destructive action title.",
+        "section": "colors"
+      },
+      {
+        "name": "The System Type Rule",
+        "body": "Keep semantic text styles so Dynamic Type can resize them; do not convert this table into fixed point-size constants. Transfer filenames currently allow two lines; accessibility-size behavior remains a verification item.",
+        "section": "typography"
+      },
+      {
+        "name": "The Native Material Rule",
+        "body": "Use the existing system material for notices and bars; do not turn those components into custom floating cards or hand-built glass.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do retain native navigation, grouped forms, sheets and confirmation dialogs.",
+      "Do preserve semantic colors, system text styles and native materials at their existing roles.",
+      "Do use the observed spacing tokens for the matching grid, heading, badge and transfer-row patterns.",
+      "Do keep transfer/deletion states readable in words, with available recovery actions.",
+      "Do label icon-only actions and media meaningfully, and keep controls inside safe areas.",
+      "Do use the English/Simplified Chinese string catalog and locale-aware date/byte formatting for new UI copy."
+    ],
+    "donts": [
+      "Don't replace dynamic native colors, type, control geometry or ordinary padding with sampled fixed values.",
+      "Don't add custom global navigation, a web icon library, a shadow system or hand-built glass to these surfaces.",
+      "Don't crop originals in detail just because thumbnails use square crops.",
+      "Don't turn a media badge into a filter chip or the identity artwork's navy into a second UI tint.",
+      "Don't infer completed accessibility, localization, Dark Mode or device QA from source-derived rules."
+    ]
+  }
+}

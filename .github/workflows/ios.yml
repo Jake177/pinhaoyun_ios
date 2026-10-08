@@ -1,0 +1,23 @@
+name: iOS core checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  simulator:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate project and source references
+        run: |
+          python3 scripts/generate-project.py
+          git diff --exit-code -- PinHaoYun.xcodeproj
+          plutil -lint App/Info.plist App/Resources/PrivacyInfo.xcprivacy
+      - name: Test native core
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for group in json.load(sys.stdin)["devices"].values() for d in group if d["name"].startswith("iPhone")))')
+          xcodebuild test -project PinHaoYun.xcodeproj -scheme PinHaoYun -destination "platform=iOS Simulator,id=$DEVICE_ID" -parallel-testing-enabled NO

@@ -1,0 +1,15 @@
+.DS_Store
+build/
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.env*
+!.env.example
+Config/Local.xcconfig
+.impeccable/review/
+infra/artifacts/
+infra/outputs.local.json
+
+.xcodebuildmcp/
+infra/*local.json
