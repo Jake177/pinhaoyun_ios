@@ -27,6 +27,7 @@ struct ConsentView: View {
     @State private var legal: PolicySheet?
     @State private var agreed = false
     @State private var busy = false
+    @State private var loadingPolicy = false
     @State private var error: String?
     var body: some View {
         NavigationStack {
@@ -42,7 +43,8 @@ struct ConsentView: View {
                         Toggle("I agree to the terms and have read the privacy notice.", isOn: $agreed)
                     }
                 }
-                if let error { Section { Text(error).foregroundStyle(.red) } }
+                if loadingPolicy { Section { ProgressView("Loading terms and privacy notice") } }
+                if let error { Section { Text(error).foregroundStyle(.red); Button("Try again") { Task { await loadPolicy() } }.disabled(loadingPolicy) } }
                 Section {
                     Button(action: accept) { HStack { Text("Agree and continue"); Spacer(); if busy { ProgressView() } } }
                         .disabled(!agreed || policy == nil || busy)
@@ -51,8 +53,14 @@ struct ConsentView: View {
             }
             .navigationTitle("Your account")
             .sheet(item: $legal) { PolicyTextView(sheet: $0) }
-            .task { do { policy = try await api.request("/api/mobile/policies", authenticated: false) } catch { self.error = error.localizedDescription } }
+            .task { await loadPolicy() }
         }
+    }
+    private func loadPolicy() async {
+        loadingPolicy = true; error = nil; agreed = false
+        defer { loadingPolicy = false }
+        do { policy = try await api.request("/api/mobile/policies", authenticated: false) }
+        catch { if !Task.isCancelled { self.error = error.localizedDescription } }
     }
     private func accept() {
         guard let policy else { return }

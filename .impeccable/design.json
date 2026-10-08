@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-08T04:27:16.323487Z",
+  "generatedAt": "2026-10-08T07:16:12.351206Z",
   "title": "Design System: PinHaoYun iOS",
   "extensions": {
     "colorMeta": {
@@ -80,7 +80,10 @@
         "App/Views/PolicyViews.swift",
         "App/Services/PhotoImporter.swift",
         "App/Resources/Localizable.xcstrings",
-        "Artwork/AppIcon.svg"
+        "Artwork/AppIcon.svg",
+        "App/Services/APIClient.swift",
+        "App/Services/TransferManager.swift",
+        "App/Models/TransferRecord.swift"
       ],
       "semanticColors": [
         {
@@ -239,7 +242,7 @@
           "description": "System sections for account, authentication, consent, deletion and media information.",
           "swiftUI": "Form { Section { /* native fields, labels and actions */ } }",
           "source": "App/Views/AuthView.swift; App/Views/AccountView.swift; App/Views/PolicyViews.swift; App/Views/MediaDetailView.swift",
-          "states": "OS-owned background, insets and corners; no custom card primitive."
+          "states": "OS-owned background, insets and corners. Account data and policy loading recover independently; Consent policy loading/retry appears in native sections. No custom card primitive."
         },
         {
           "name": "Transfer Row",
@@ -249,7 +252,27 @@
           "swiftUI": "List { ForEach(visible) { record in VStack(alignment: .leading, spacing: 8) { /* symbol + filename, state + bytes, progress, error, actions */ }.padding(.vertical, 6) } }",
           "source": "App/Views/TransfersView.swift",
           "identity": "TransferRecord.id",
-          "states": "Completed/failed/other symbols, text state, unfinished progress, failed Retry and unfinished Cancel upload."
+          "states": "Completed/failed/other symbols, text state, unfinished progress, failed Retry and unfinished Cancel upload.",
+          "history": "Rows filter by the signed-in owner. Normal Account sign-out cancels unfinished uploads after confirmation and preserves completed/cancelled history for the original owner."
+        },
+        {
+          "name": "Sign-out Confirmation",
+          "kind": "custom",
+          "description": "Native consequence-specific confirmation when Account sign-out would cancel the current owner's unfinished uploads.",
+          "swiftUI": ".confirmationDialog(\"Sign out and cancel unfinished uploads?\", isPresented: $confirmingSignOut, titleVisibility: .visible) { Button(\"Cancel uploads and sign out\", role: .destructive, action: performSignOut) } message: { Text(\"Unfinished uploads will be cancelled. Add them again after signing in. Photos on your device, completed cloud files and transfer history are kept.\") }",
+          "source": "App/Views/AccountView.swift",
+          "states": "Shown only for the current owner's unfinished uploads; no unfinished uploads proceeds directly. Sign-out keeps its title and trailing progress while busy.",
+          "effects": "Normal Account sign-out cancels unfinished uploads and preserves per-owner history; it does not use the account-deletion history-clearing path."
+        },
+        {
+          "name": "Deletion Receipt Recovery",
+          "kind": "custom",
+          "description": "Native receipt list remains re-enterable from authentication after returning to sign-in.",
+          "swiftUI": "Section { Button(\"Check deletion status\", action: refresh); Button(\"Return to sign in\") { api.dismissReceipt() } }",
+          "source": "App/Views/PolicyViews.swift; App/Views/AuthView.swift; App/Services/APIClient.swift",
+          "states": "Readable checking/requested/completed status; deadline/completion dates when available; visible error and status-check action.",
+          "returnPath": "dismissReceipt() clears in-memory presentation, retaining the saved receipt. Auth conditionally shows Check account deletion and calls restoreReceipt().",
+          "scope": "Presentation of a receipt is not a claim of completed deletion."
         }
       ],
       "assets": [
@@ -288,31 +311,59 @@
           "Locale-aware file byte counts",
           "Filenames and server text remain content"
         ],
-        "verification": "Runtime coverage and truncation not certified."
+        "verification": "Runtime coverage and truncation not certified.",
+        "observedZhHansEntryCount": 133
       },
       "verification": {
-        "basis": "Source and native identity-asset inspection only.",
-        "finishReview": "In progress at documentation time; no QA pass claimed.",
+        "basis": "Source and identity-asset conventions only; runtime evidence and finish verdicts are maintained outside the design system.",
         "notCertified": [
           "Simulator/device interaction",
           "Dark Mode appearance",
           "Large Dynamic Type layout",
           "VoiceOver behavior",
           "Reduce Motion behavior",
-          "Complete runtime localization coverage"
+          "Complete runtime localization coverage",
+          "Hardware behavior",
+          "Legal approval",
+          "Production readiness"
         ]
       },
       "previewLimitations": [
         "No HTML/CSS approximations are synthesized for system SwiftUI controls; native component definitions above are authoritative.",
         "Semantic colors and text styles have no fabricated fixed hex/point substitutes in frontmatter.",
         "No synthetic tonal ramps, shadows, motion curves or breakpoints are promoted into the native system."
-      ]
+      ],
+      "interactionConventions": {
+        "accountRecovery": {
+          "source": "App/Views/AccountView.swift",
+          "data": "loading and error are independent of policyLoading and policyError; initial account progress appears only before a profile is available.",
+          "policies": "Policy progress and error/retry remain in the Privacy and account section; an already-loaded profile/storage summary remains visible.",
+          "retry": "Account Try again calls load(); policy Try again calls loadPolicies()."
+        },
+        "consentRecovery": {
+          "source": "App/Views/PolicyViews.swift",
+          "loading": "ProgressView(\"Loading terms and privacy notice\")",
+          "error": "Visible red error with Try again, disabled while loadingPolicy.",
+          "agreement": "Reload resets agreed = false; acceptance requires available policy, explicit agreement and no active submission."
+        },
+        "accountSignOut": {
+          "source": "App/Views/AccountView.swift; App/Services/TransferManager.swift; App/Views/TransfersView.swift",
+          "condition": "Confirm only when the current owner has unfinished uploads.",
+          "confirmation": "Native confirmationDialog explains cancellation and names the destructive action Cancel uploads and sign out.",
+          "history": "cancelUnfinishedForSignOut() retains per-owner completed/cancelled records; the transfer list filters to the signed-in owner."
+        },
+        "receiptReturn": {
+          "source": "App/Views/PolicyViews.swift; App/Views/AuthView.swift; App/Services/APIClient.swift",
+          "dismissal": "Return to sign in dismisses only receipt presentation, preserving the saved receipt.",
+          "reentry": "Check account deletion appears in authentication when hasSavedDeletionReceipt and calls restoreReceipt()."
+        }
+      }
     }
   },
   "components": [],
   "narrative": {
     "northStar": "Native photo timeline",
-    "overview": "PinHaoYun uses the familiar iPhone photo-library grammar: media carries the visual interest, while system navigation, readable labels and persistent state make the interface feel quiet and dependable. Brand expression comes from the existing cloud-and-puzzle mark and one blue interaction tint. System text styles, controls and materials carry the rest of the interface.\n\nThis is a source-derived record of `App/PinHaoYunApp.swift`, `App/Views/` and `App/Services/PhotoImporter.swift`, reconciled with the approved native direction. Dimensions are native points, not web pixels. Frontmatter holds observed fixed values and portable family/weight facts; `.impeccable/design.json` records native semantic colors, Dynamic Type styles and system-owned geometry that the portable token schema cannot express. No fixed substitutes are invented for dynamic native values.\n\nSimulator, hardware, Dark Mode, large Dynamic Type, localization and VoiceOver results are not certified here. Finish verification was still in progress when this source record was written.",
+    "overview": "PinHaoYun uses the familiar iPhone photo-library grammar: media carries the visual interest, while system navigation, readable labels and persistent state make the interface feel quiet and dependable. Brand expression comes from the existing cloud-and-puzzle mark and one blue interaction tint. System text styles, controls and materials carry the rest of the interface.\n\nThis is a source-derived record of `App/PinHaoYunApp.swift`, `App/Views/` and `App/Services/PhotoImporter.swift`, reconciled with the approved native direction. Dimensions are native points, not web pixels. Frontmatter holds observed fixed values and portable family/weight facts; `.impeccable/design.json` records native semantic colors, Dynamic Type styles and system-owned geometry that the portable token schema cannot express. No fixed substitutes are invented for dynamic native values.\n\nThis source-derived record makes no runtime, hardware, accessibility, legal or production-readiness claims. Verification evidence belongs outside the design system.",
     "keyCharacteristics": [
       "Native navigation, forms, pickers, sheets and confirmation dialogs.",
       "Semantic surfaces and text, with blue interaction and red attention cues.",

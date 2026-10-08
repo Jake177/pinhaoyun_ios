@@ -9,6 +9,9 @@ struct AccountView: View {
     @State private var error: String?
     @State private var signingOut = false
     @State private var loading = false
+    @State private var policyLoading = false
+    @State private var policyError: String?
+    @State private var confirmingSignOut = false
     var body: some View {
         NavigationStack {
             Form {
@@ -31,6 +34,11 @@ struct AccountView: View {
                         Button("Terms of use") { legal = PolicySheet(kind: .terms, document: policy) }
                         Button("Privacy notice") { legal = PolicySheet(kind: .privacy, document: policy) }
                     }
+                    if policyLoading && policy == nil { ProgressView("Loading terms and privacy notice") }
+                    if let policyError {
+                        Text(policyError).foregroundStyle(.red)
+                        Button("Try again") { Task { await loadPolicies() } }
+                    }
                     NavigationLink("Delete account") { DeleteAccountView() }.foregroundStyle(.red)
                 }
                 Section {
@@ -39,24 +47,33 @@ struct AccountView: View {
             }
             .navigationTitle("Account")
             .sheet(item: $legal) { PolicyTextView(sheet: $0) }
+            .confirmationDialog("Sign out and cancel unfinished uploads?", isPresented: $confirmingSignOut, titleVisibility: .visible) {
+                Button("Cancel uploads and sign out", role: .destructive, action: performSignOut)
+            } message: { Text("Unfinished uploads will be cancelled. Add them again after signing in. Photos on your device, completed cloud files and transfer history are kept.") }
             .task { await load() }
             .task { await loadPolicies() }
             .refreshable { await load() }
         }
     }
     private func load() async {
-        loading = true
+        loading = true; error = nil
         defer { loading = false }
         do { profile = try await api.request("/api/user/profile"); error = nil }
-        catch { self.error = error.localizedDescription }
+        catch { if !Task.isCancelled { self.error = error.localizedDescription } }
     }
     private func loadPolicies() async {
+        policyLoading = true; policyError = nil
+        defer { policyLoading = false }
         do { policy = try await api.request("/api/mobile/policies", authenticated: false) }
-        catch { self.error = error.localizedDescription }
+        catch { if !Task.isCancelled { policyError = error.localizedDescription } }
     }
     private func signOut() {
+        if transfers.records().contains(where: { $0.ownerSub == api.tokens?.sub && !$0.isFinished }) { confirmingSignOut = true }
+        else { performSignOut() }
+    }
+    private func performSignOut() {
         signingOut = true
-        Task { await transfers.clearForSignOut(); await api.signOut(); signingOut = false }
+        Task { await transfers.cancelUnfinishedForSignOut(); await api.signOut(); signingOut = false }
     }
 }
 private struct DeleteAccountView: View {

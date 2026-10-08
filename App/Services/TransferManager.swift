@@ -168,6 +168,12 @@ import Observation
         for record in records() where record.ownerSub == owner { if !record.isFinished { await cancel(record) }; context.delete(record) }
         try? context.save()
     }
+    func cancelUnfinishedForSignOut() async {
+        guard let owner = api.tokens?.sub else { return }
+        for record in records() where record.ownerSub == owner && !record.isFinished { await cancel(record) }
+        // Keep completed/cancelled history associated with its original account.
+        try? context.save()
+    }
     nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         let tag = task.taskDescription
         let status = (task.response as? HTTPURLResponse)?.statusCode

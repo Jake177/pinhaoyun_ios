@@ -61,6 +61,7 @@ struct PolicyDocument: Decodable, Sendable {
 }
 struct DeletionReceipt: Codable, Sendable {
     let requestId: String; let receipt: String; let requestedAt: String; let deleteBy: String; let state: String
+    var ownerSub: String? = nil
 }
 struct DeletionStatus: Decodable, Sendable { let state: String; let requestedAt: String; let deleteBy: String; let completedAt: String? }
 struct OKResponse: Decodable, Sendable { var ok: Bool?; var userConfirmed: Bool? }

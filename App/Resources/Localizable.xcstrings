@@ -1231,6 +1231,56 @@
         }
       }
     },
+    "Loading terms and privacy notice": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在加载服务条款与隐私政策"
+          }
+        }
+      }
+    },
+    "Check account deletion": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查询账号注销进度"
+          }
+        }
+      }
+    },
+    "Sign out and cancel unfinished uploads?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出登录并取消未完成的上传？"
+          }
+        }
+      }
+    },
+    "Cancel uploads and sign out": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消上传并退出登录"
+          }
+        }
+      }
+    },
+    "Unfinished uploads will be cancelled. Add them again after signing in. Photos on your device, completed cloud files and transfer history are kept.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未完成的上传将取消，重新登录后需要再次添加。手机相册、已完成的云端文件及传输记录会保留。"
+          }
+        }
+      }
+    },
     "Waiting for network": {
       "localizations": {
         "zh-Hans": {

@@ -47,6 +47,36 @@ final class CoreTests: XCTestCase {
         Keychain.remove(account: key)
         XCTAssertNil(try Keychain.read(DeletionReceipt.self, account: key))
     }
+    @MainActor func testReturningToSignInPreservesDeletionProof() throws {
+        let url = URL(string: "https://receipt-" + UUID().uuidString + ".invalid")!
+        let key = "deletion:" + url.absoluteString
+        defer { Keychain.remove(account: key) }
+        let receipt = DeletionReceipt(requestId: "request", receipt: "secret-proof", requestedAt: "2026-10-08T00:00:00Z", deleteBy: "2026-11-07T00:00:00Z", state: "PENDING", ownerSub: "owner")
+        try Keychain.save(receipt, account: key)
+        let api = APIClient(baseURL: url)
+        api.dismissReceipt()
+        XCTAssertNil(api.deletionReceipt)
+        XCTAssertTrue(api.hasSavedDeletionReceipt)
+        api.restoreReceipt()
+        XCTAssertEqual(api.deletionReceipt?.receipt, receipt.receipt)
+    }
+    @MainActor func testConfirmedSignOutCancellationKeepsTransferHistory() async throws {
+        let url = URL(string: "https://signout-" + UUID().uuidString + ".invalid")!
+        defer { Keychain.remove(account: "session:" + url.absoluteString) }
+        let api = APIClient(baseURL: url)
+        try api.saveTokens(AuthTokens(idToken: "synthetic", accessToken: "synthetic", refreshToken: "synthetic", expiresIn: 60, username: "owner", sub: "owner", email: "owner@example.invalid", requiresConsent: false))
+        let container = try ModelContainer(for: TransferRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let manager = TransferManager(api: api, container: container, identifier: "com.jake177.pinhaoyun.history." + UUID().uuidString)
+        let folder = UUID().uuidString
+        let component = UploadComponent(filePath: folder + "/fixture.png", fileName: "fixture.png", contentType: "image/png", size: 12, mediaType: "PHOTO", mediaRole: "image")
+        let completed = try TransferRecord(ownerSub: "owner", displayName: "completed", components: [component]); completed.state = "completed"
+        let unfinished = try TransferRecord(ownerSub: "owner", displayName: "unfinished", components: [component]); unfinished.state = "failed"
+        manager.context.insert(completed); manager.context.insert(unfinished); try manager.context.save()
+        await manager.cancelUnfinishedForSignOut()
+        XCTAssertEqual(manager.records().count, 2)
+        XCTAssertEqual(completed.state, "completed")
+        XCTAssertEqual(unfinished.state, "cancelled")
+    }
 
     @MainActor func testNativeBackgroundUploadAgainstIsolatedAWS() async throws {
         let env = ProcessInfo.processInfo.environment
@@ -56,6 +86,7 @@ final class CoreTests: XCTestCase {
         let api = APIClient(baseURL: URL(string: "http://127.0.0.1:3000")!)
         try await api.signIn(email: email, password: password)
         XCTAssertFalse(api.tokens!.requiresConsent)
+        let before: UserProfile = try await api.request("/api/user/profile")
         let container = try ModelContainer(for: TransferRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let manager = TransferManager(api: api, container: container, identifier: "com.jake177.pinhaoyun.integration." + UUID().uuidString)
         let folderName = UUID().uuidString, photoId = UUID().uuidString.lowercased()
@@ -69,6 +100,9 @@ final class CoreTests: XCTestCase {
         try bytes.write(to: folder.appendingPathComponent("QA-native.png"))
         let component = UploadComponent(filePath: folderName + "/QA-native.png", fileName: "QA-native.png", contentType: "image/png", size: Int64(bytes.count), mediaType: "PHOTO", mediaRole: "image", photoId: photoId)
         try manager.enqueue(displayName: "QA native upload", components: [component], owner: api.tokens!.sub)
+        // Reopening/scene activation may overlap initialization of an upload.
+        await manager.resume()
+        await manager.resume()
         let deadline = Date.now.addingTimeInterval(90)
         while Date.now < deadline {
             if let record = manager.records().first, ["completed", "failed"].contains(record.state) { break }
@@ -82,6 +116,8 @@ final class CoreTests: XCTestCase {
         let file = try await api.download(try XCTUnwrap(links.originalPhotoUrl ?? links.originalUrl), extension: "png")
         defer { try? FileManager.default.removeItem(at: file) }
         XCTAssertEqual(try Data(contentsOf: file), bytes)
+        let after: UserProfile = try await api.request("/api/user/profile")
+        XCTAssertEqual(after.usedBytes - before.usedBytes, Int64(bytes.count))
         // The generated QA image remains in the isolated account for visual QA.
     }
 }

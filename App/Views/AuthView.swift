@@ -62,6 +62,7 @@ struct AuthView: View {
                     }
                 }
                 Section {
+                    if api.hasSavedDeletionReceipt { Button("Check account deletion") { api.restoreReceipt() } }
                     if let policy {
                         Button("Terms of use") { legal = PolicySheet(kind: .terms, document: policy) }
                         Button("Privacy notice") { legal = PolicySheet(kind: .privacy, document: policy) }

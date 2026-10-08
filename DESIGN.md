@@ -64,7 +64,7 @@ PinHaoYun uses the familiar iPhone photo-library grammar: media carries the visu
 
 This is a source-derived record of `App/PinHaoYunApp.swift`, `App/Views/` and `App/Services/PhotoImporter.swift`, reconciled with the approved native direction. Dimensions are native points, not web pixels. Frontmatter holds observed fixed values and portable family/weight facts; `.impeccable/design.json` records native semantic colors, Dynamic Type styles and system-owned geometry that the portable token schema cannot express. No fixed substitutes are invented for dynamic native values.
 
-Simulator, hardware, Dark Mode, large Dynamic Type, localization and VoiceOver results are not certified here. Finish verification was still in progress when this source record was written.
+This source-derived record makes no runtime, hardware, accessibility, legal or production-readiness claims. Verification evidence belongs outside the design system.
 
 **Key Characteristics:**
 
@@ -174,9 +174,19 @@ A media cell keeps a neutral square until a thumbnail is available; its fallback
 
 Rows preserve `TransferRecord.id` identity. A filename, readable state, monospaced completed bytes and unfinished progress remain visible. Failed rows expose an error and Retry; unfinished rows expose Cancel upload. Symbols are `checkmark.circle.fill` for completed, `exclamationmark.circle` for failed and `arrow.up.circle` otherwise. State text accompanies the symbol.
 
+History is scoped to the signed-in owner. Normal Account sign-out cancels unfinished uploads after confirmation and keeps completed/cancelled rows associated with their original owner; another account does not see those rows.
+
 ### Empty, Loading and Recovery States
 
 `ContentUnavailableView` handles empty Library/Transfers and unavailable media. The empty Library offers the add action. `ProgressView` handles loading. Network recovery names Try again or Refresh access; Photos permission guidance names Settings or Save to Files. There is no skeleton or illustration system.
+
+Account data and policy loading have independent state. Initial account loading uses a labeled `ProgressView`; policy loading and its error/retry remain in the Privacy and account section. A policy failure does not hide an already-loaded storage summary. Consent similarly names policy loading, provides Try again on error and disables retry during that request. Reloading consent policy resets agreement; Agree and continue requires an available policy, explicit agreement and no active submission.
+
+### Confirmation and Receipt Recovery
+
+Account sign-out presents a native confirmation dialog when the current owner has unfinished uploads. Its destructive action explicitly says Cancel uploads and sign out, and the explanation identifies what is cancelled and what is kept. With no unfinished uploads, Account sign-out proceeds directly. This is a consequence-specific dialog, not a replacement for native navigation.
+
+The deletion receipt remains a native list with readable requested/checking/completed status, dates when available and Check deletion status. Return to sign in dismisses that view without erasing the saved receipt. Authentication exposes Check account deletion when a saved receipt exists, restoring the same status path. Receipt presentation stays separate from a promise that deletion has completed.
 
 ### Brand Asset
 

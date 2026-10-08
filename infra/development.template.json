@@ -215,6 +215,7 @@
                     "dynamodb:Query",
                     "dynamodb:Scan",
                     "dynamodb:TransactWriteItems",
+                    "dynamodb:ConditionCheckItem",
                     "dynamodb:BatchWriteItem"
                   ],
                   "Resource": [
@@ -440,7 +441,10 @@
         },
         "Layers": [
           "arn:aws:lambda:ap-southeast-2:883086653724:layer:ImageMagick:4"
-        ]
+        ],
+        "EphemeralStorage": {
+          "Size": 3072
+        }
       },
       "DependsOn": "PhotoIngestLog"
     },
@@ -510,7 +514,10 @@
         },
         "Layers": [
           "arn:aws:lambda:ap-southeast-2:883086653724:layer:ffmpeg:1"
-        ]
+        ],
+        "EphemeralStorage": {
+          "Size": 3072
+        }
       },
       "DependsOn": "TranscodeVideoLog"
     },
@@ -979,6 +986,7 @@
                     "dynamodb:Query",
                     "dynamodb:Scan",
                     "dynamodb:TransactWriteItems",
+                    "dynamodb:ConditionCheckItem",
                     "dynamodb:BatchWriteItem"
                   ],
                   "Resource": [
@@ -1113,6 +1121,7 @@
                     "dynamodb:Query",
                     "dynamodb:Scan",
                     "dynamodb:TransactWriteItems",
+                    "dynamodb:ConditionCheckItem",
                     "dynamodb:BatchWriteItem"
                   ],
                   "Resource": [

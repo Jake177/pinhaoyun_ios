@@ -7,6 +7,7 @@ struct LibraryView: View {
     @State private var cursor: String?
     @State private var hasMore = false
     @State private var loading = false
+    @State private var loadGeneration = UUID()
     @State private var error: String?
     @State private var importing = false
     @State private var filter = ""
@@ -66,20 +67,25 @@ struct LibraryView: View {
         }
     }
     private func load(reset: Bool) async {
-        guard !loading else { return }
+        guard reset || !loading else { return }
+        let generation = UUID()
+        loadGeneration = generation
         loading = true; error = nil
-        defer { loading = false }
+        defer { if generation == loadGeneration { loading = false } }
         var query = URLComponents(); query.queryItems = [URLQueryItem(name: "limit", value: "60")]
         if !filter.isEmpty { query.queryItems?.append(URLQueryItem(name: "type", value: filter)) }
         if !reset, let cursor { query.queryItems?.append(URLQueryItem(name: "cursor", value: cursor)) }
         do {
             let page: LibraryPage = try await api.request("/api/videos/list?" + (query.percentEncodedQuery ?? ""))
+            guard generation == loadGeneration, !Task.isCancelled else { return }
             if reset { items = page.videos } else {
                 let existing = Set(items.map { $0.type + ":" + $0.id })
                 items += page.videos.filter { !existing.contains($0.type + ":" + $0.id) }
             }
             cursor = page.nextCursor; hasMore = page.hasMore
-        } catch { self.error = error.localizedDescription }
+        } catch {
+            if generation == loadGeneration, !Task.isCancelled { self.error = error.localizedDescription }
+        }
     }
 }
 private struct MediaCell: View {

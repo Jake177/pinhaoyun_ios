@@ -47,6 +47,12 @@ const photoConfig=aws('lambda','get-function-configuration',{FunctionName:'pinha
 for(const name of ['MAGICK_HOME','LD_LIBRARY_PATH','MAGICK_CONFIGURE_PATH','MAGICK_CODER_MODULE_PATH','IMAGEMAGICK_IDENTIFY_PATH','IMAGEMAGICK_CONVERT_PATH']) if(photoConfig[name]) template.Resources.PhotoIngest.Properties.Environment.Variables[name]=photoConfig[name];
 const locationConfig=aws('lambda','get-function-configuration',{FunctionName:'pinhaoyun-enrichLocation'}).Environment?.Variables || {};
 deploy(prefix,template,[{ParameterKey:'ArtifactBucket',ParameterValue:artifactName},{ParameterKey:'ArtifactPrefix',ParameterValue:artifactPrefix},{ParameterKey:'MapboxToken',ParameterValue:locationConfig.MAPBOX_TOKEN || locationConfig.NEXT_PUBLIC_MAPBOX_TOKEN || ''}]);
+for(const name of sources) {
+ const logGroupName=`/aws/lambda/${prefix}-${name}`;
+ try { aws('logs','create-log-group',{logGroupName,tags:{Project:'PinHaoYun',Environment:'ios-development'}}); }
+ catch(error) { if(!error.message.includes('ResourceAlreadyExistsException')) throw error; }
+ aws('logs','put-retention-policy',{logGroupName,retentionInDays:14});
+}
 const values=outputs(prefix);
 for(const client of ['Web','Mobile']) {
  const secret=aws('cognito-idp','describe-user-pool-client',{UserPoolId:values.UserPoolId,ClientId:values[client+'ClientId']}).UserPoolClient.ClientSecret;

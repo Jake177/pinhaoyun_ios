@@ -110,21 +110,24 @@ private struct APIResponseFailure: Decodable { let error: String?; let code: Str
         ["acceptedTerms": true, "acknowledgedPrivacy": true, "termsVersion": policy.version, "privacyVersion": policy.version]
     }
     func signOut() async {
-        let generation = sessionGeneration
-        if let tokens {
-            let _: OKResponse? = try? await request("/api/mobile/auth/sign-out", method: "POST", body: ["refreshToken": tokens.refreshToken], authenticated: false)
+        let refreshToken = tokens?.refreshToken
+        clearTokens()
+        if let refreshToken {
+            let _: OKResponse? = try? await request("/api/mobile/auth/sign-out", method: "POST", body: ["refreshToken": refreshToken], authenticated: false)
         }
-        if generation == sessionGeneration { clearTokens() }
     }
     func deleteAccount() async throws {
+        guard let owner = tokens?.sub else { throw URLError(.userAuthenticationRequired) }
         var bytes = [UInt8](repeating: 0, count: 32)
         guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { throw Keychain.KeychainError.unavailable }
         let proof = Data(bytes).base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
-        let intent = deletionReceipt ?? DeletionReceipt(requestId: UUID().uuidString.lowercased(), receipt: proof, requestedAt: ISO8601DateFormatter().string(from: .now), deleteBy: ISO8601DateFormatter().string(from: .now.addingTimeInterval(30 * 86400)), state: "REQUESTING")
+        let pending = deletionReceipt.flatMap { $0.ownerSub == owner && $0.state == "REQUESTING" ? $0 : nil }
+        let intent = pending ?? DeletionReceipt(requestId: UUID().uuidString.lowercased(), receipt: proof, requestedAt: ISO8601DateFormatter().string(from: .now), deleteBy: ISO8601DateFormatter().string(from: .now.addingTimeInterval(30 * 86400)), state: "REQUESTING", ownerSub: owner)
         // Save the proof before sending: a dropped response must not lose the receipt.
         try Keychain.save(intent, account: receiptKey)
         deletionReceipt = intent
-        let receipt: DeletionReceipt = try await request("/api/user/delete-account", method: "POST", body: ["confirm": true, "requestId": intent.requestId, "receipt": intent.receipt])
+        var receipt: DeletionReceipt = try await request("/api/user/delete-account", method: "POST", body: ["confirm": true, "requestId": intent.requestId, "receipt": intent.receipt])
+        receipt.ownerSub = owner
         try? Keychain.save(receipt, account: receiptKey)
         deletionReceipt = receipt
         clearTokens()
@@ -133,7 +136,9 @@ private struct APIResponseFailure: Decodable { let error: String?; let code: Str
         guard let receipt = deletionReceipt else { throw URLError(.userAuthenticationRequired) }
         return try await request("/api/user/deletion-status", method: "POST", body: ["requestId": receipt.requestId, "receipt": receipt.receipt], authenticated: false)
     }
-    func dismissReceipt() { Keychain.remove(account: receiptKey); deletionReceipt = nil }
+    var hasSavedDeletionReceipt: Bool { (try? Keychain.read(DeletionReceipt.self, account: receiptKey)) != nil }
+    func dismissReceipt() { deletionReceipt = nil }
+    func restoreReceipt() { deletionReceipt = try? Keychain.read(DeletionReceipt.self, account: receiptKey) }
     func download(_ url: URL, extension ext: String) async throws -> URL {
         let (temporary, response) = try await network.download(from: url)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw URLError(.badServerResponse) }
