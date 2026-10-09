@@ -4,6 +4,7 @@ struct AccountView: View {
     @Environment(APIClient.self) private var api
     @Environment(TransferManager.self) private var transfers
     @Environment(PhotoImportSession.self) private var photoImport
+    @Environment(BackupManager.self) private var backup
     @State private var profile: UserProfile?
     @State private var policy: PolicyDocument?
     @State private var legal: PolicySheet?
@@ -32,6 +33,9 @@ struct AccountView: View {
                 }
                 if loading && profile == nil { Section { ProgressView("Loading your account") } }
                 if let error { Section { Text(error).foregroundStyle(.red); Button("Try again") { Task { await load() } } } }
+                Section {
+                    NavigationLink { BackupSettingsView() } label: { VStack(alignment: .leading, spacing: 4) { Text("Automatic backup"); Text(backup.status).font(.caption).foregroundStyle(.secondary) } }
+                }
                 Section("Privacy") {
                     if let policy {
                         Button("Terms of use") { legal = PolicySheet(kind: .terms, document: policy) }
@@ -47,7 +51,7 @@ struct AccountView: View {
                     NavigationLink("Delete account") { DeleteAccountView() }.foregroundStyle(.red)
                     Button(action: signOut) { HStack { Text("Sign out"); Spacer(); if signingOut { ProgressView() } } }.disabled(signingOut)
                 } header: { Text("Account") }
-                footer: { Text("PinHaoYun · Beta 0.1\nYour device's Photos library is never removed by account deletion.") }
+                footer: { Text("PinHaoYun · Beta 0.2\nThis beta uses separate test accounts and cloud files.\nYour device's Photos library is never removed by account deletion.") }
             }
             .navigationTitle("Account")
             .disabled(signingOut)
@@ -79,7 +83,7 @@ struct AccountView: View {
     private func performSignOut() {
         signingOut = true
         photoImport.stop()
-        Task { await transfers.cancelUnfinishedForSignOut(); await api.signOut(); signingOut = false }
+        Task { await backup.stopForSignOut(); await transfers.cancelUnfinishedForSignOut(); await api.signOut(); signingOut = false }
     }
 }
 private struct DeleteAccountView: View {
@@ -93,7 +97,7 @@ private struct DeleteAccountView: View {
         Form {
             Section {
                 Text("Delete your PinHaoYun account?").font(.title2.bold())
-                Text("This deletes the account shared by Web and iOS. Access stops immediately and cloud photos, videos and account data will be deleted within 30 days.")
+                Text("This deletes this beta's isolated test account. Production Web accounts are separate. Access stops immediately and cloud photos, videos and account data will be deleted within 30 days.")
                 Text("Photos on your device are kept. Download any cloud originals you need before continuing.").foregroundStyle(.secondary)
             }
             Section("Confirm your identity") {

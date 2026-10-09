@@ -1,2 +1,2 @@
-API_BASE_URL = http:/$()/127.0.0.1:3000
+API_BASE_URL = https:/$()/tqf3pxrgwm.ap-southeast-2.awsapprunner.com
 #include? "Local.xcconfig"

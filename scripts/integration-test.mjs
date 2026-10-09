@@ -40,7 +40,7 @@ for(let i=0;i<2;i++) {
 }
 writeFileSync(new URL('infra/test-credentials.local.json',root),JSON.stringify(credentials,null,2)+'\n',{mode:0o600});
 console.log('Created two isolated QA accounts; email sending suppressed.');
-const policy=await request('/api/mobile/policies');assert.equal(policy.version,'2026-10-08-beta-1');
+const policy=await request('/api/mobile/policies');assert.equal(policy.version,'2026-10-09-beta-2');
 const consent={acceptedTerms:true,acknowledgedPrivacy:true,termsVersion:policy.version,privacyVersion:policy.version};
 const sessions=[];
 for(const c of credentials) {

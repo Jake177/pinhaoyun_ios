@@ -6,23 +6,29 @@ import SwiftData
     @Environment(\.scenePhase) private var scenePhase
     @State private var api: APIClient
     @State private var transfers: TransferManager
+    @State private var backup: BackupManager
     @State private var photoImport = PhotoImportSession()
     private let container: ModelContainer
     init() {
-        do { container = try ModelContainer(for: TransferRecord.self) }
+        do { container = try ModelContainer(for: TransferRecord.self, BackupSettings.self, BackupAsset.self) }
         catch { fatalError("Unable to open the durable transfer store: \(error)") }
         let client = APIClient()
         let manager = TransferManager(api: client, container: container)
         _api = State(initialValue: client); _transfers = State(initialValue: manager)
+        _backup = State(initialValue: BackupManager(api: client, transfers: manager))
         AppDelegate.transfers = manager
     }
     var body: some Scene {
         WindowGroup {
-            RootView().environment(api).environment(transfers).environment(photoImport).modelContainer(container).environment(\.modelContext, transfers.context)
+            RootView().environment(api).environment(transfers).environment(backup).environment(photoImport).modelContainer(container).environment(\.modelContext, transfers.context)
                 .tint(.blue)
-                .task(id: api.tokens?.sub) { if api.tokens != nil { await transfers.resume() } }
+                .task(id: api.tokens?.sub) { await backup.activate(); if api.tokens != nil { await transfers.resume() } }
+                .onChange(of: api.tokens?.requiresConsent) { _, _ in backup.check() }
                 .onChange(of: api.tokens?.sub) { _, owner in if photoImport.owner != owner { photoImport.stop() } }
-                .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await transfers.resume() } } }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { Task { await backup.activate(); await transfers.resume() } }
+                    if phase == .background { backup.enterBackground() }
+                }
         }
     }
 }
