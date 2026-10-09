@@ -2,10 +2,63 @@ import SwiftUI
 @preconcurrency import Photos
 @preconcurrency import PhotosUI
 import UniformTypeIdentifiers
+import Observation
+
+@MainActor @Observable final class PhotoImportSession {
+    var owner: String?
+    var total = 0
+    var processed = 0
+    var added = 0
+    var failures = 0
+    var firstError: String?
+    var isPreparing = false
+    var stopping = false
+    func begin(owner: String, total: Int) {
+        self.owner = owner; self.total = total; processed = 0; added = 0; failures = 0
+        firstError = nil; stopping = false; isPreparing = true
+    }
+    func stop() { if isPreparing { stopping = true } }
+    func dismiss() { if !isPreparing { total = 0; firstError = nil } }
+}
+
+struct PhotoImportStatusView: View {
+    @Environment(PhotoImportSession.self) private var session
+    @Environment(APIClient.self) private var api
+    var showTransfers: (() -> Void)? = nil
+    var body: some View {
+        if session.isPreparing && session.owner != api.tokens?.sub {
+            ProgressView("Stopping preparation")
+        } else if session.total > 0 && session.owner == api.tokens?.sub {
+            VStack(alignment: .leading, spacing: 8) {
+                if session.isPreparing {
+                    Text(session.stopping ? String(localized: "Stopping preparation") : String(localized: "Preparing uploads")).font(.headline)
+                    ProgressView(value: Double(session.processed), total: Double(max(1, session.total)))
+                        .accessibilityLabel("Originals prepared")
+                    Text(String(format: String(localized: "%lld of %lld originals prepared"), Int64(session.processed), Int64(session.total))).font(.subheadline)
+                    Text("Keep the app open while originals are prepared. Items already in Transfers can continue uploading.").font(.footnote).foregroundStyle(.secondary)
+                    Button("Stop preparing") { session.stop() }.disabled(session.stopping)
+                } else {
+                    Label(String(format: String(localized: "%lld items added to Transfers"), Int64(session.added)), systemImage: session.failures > 0 ? "exclamationmark.circle" : "checkmark.circle")
+                    if session.stopping { Text("Preparation stopped. Your Photos library is unchanged.").font(.footnote) }
+                    if session.owner == api.tokens?.sub, let error = session.firstError {
+                        Text(String(format: String(localized: "%lld items could not be prepared. Choose them again to retry."), Int64(session.failures))).font(.footnote)
+                        Text(error).font(.footnote).foregroundStyle(.red)
+                    }
+                }
+                HStack {
+                    if let showTransfers { Button("View transfers", action: showTransfers) }
+                    Spacer()
+                    if !session.isPreparing { Button("Dismiss") { session.dismiss() } }
+                }
+            }.accessibilityElement(children: .contain)
+        }
+    }
+}
 
 struct PhotoImporter: UIViewControllerRepresentable {
+    let session: PhotoImportSession
+    let owner: String
     let receive: @MainActor ([UploadComponent], String) throws -> Void
-    let failed: @MainActor (String) -> Void
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var configuration = PHPickerConfiguration(photoLibrary: .shared())
         configuration.filter = .any(of: [.images, .videos]); configuration.selectionLimit = 0
@@ -14,21 +67,39 @@ struct PhotoImporter: UIViewControllerRepresentable {
         return picker
     }
     func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
-    func makeCoordinator() -> Coordinator { Coordinator(receive: receive, failed: failed) }
+    func makeCoordinator() -> Coordinator { Coordinator(session: session, owner: owner, receive: receive) }
     @MainActor final class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let session: PhotoImportSession
+        let owner: String
         let receive: @MainActor ([UploadComponent], String) throws -> Void
-        let failed: @MainActor (String) -> Void
-        init(receive: @escaping @MainActor ([UploadComponent], String) throws -> Void, failed: @escaping @MainActor (String) -> Void) { self.receive = receive; self.failed = failed }
+        init(session: PhotoImportSession, owner: String, receive: @escaping @MainActor ([UploadComponent], String) throws -> Void) {
+            self.session = session; self.owner = owner; self.receive = receive
+        }
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             picker.dismiss(animated: true)
+            guard !results.isEmpty, !session.isPreparing else { return }
+            session.begin(owner: owner, total: results.count)
             Task {
+                defer { session.isPreparing = false }
                 for result in results {
+                    if session.stopping { break }
+                    var components: [UploadComponent] = []
                     do {
-                        let components = try await export(result)
+                        components = try await export(result)
+                        if session.stopping { removePrepared(components); break }
                         try receive(components, components.first?.fileName ?? String(localized: "Photo"))
-                    } catch { failed(error.localizedDescription) }
+                        session.added += 1
+                    } catch {
+                        removePrepared(components)
+                        session.failures += 1
+                        if session.firstError == nil { session.firstError = error.localizedDescription }
+                    }
+                    session.processed += 1
                 }
             }
+        }
+        private func removePrepared(_ components: [UploadComponent]) {
+            if let first = components.first { try? FileManager.default.removeItem(at: TransferManager.filesRoot.appendingPathComponent(first.filePath).deletingLastPathComponent()) }
         }
         private func export(_ result: PHPickerResult) async throws -> [UploadComponent] {
             let folderName = UUID().uuidString

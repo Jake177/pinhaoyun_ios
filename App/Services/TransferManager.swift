@@ -163,8 +163,8 @@ import Observation
         if let first = record.components.first { try? FileManager.default.removeItem(at: Self.filesRoot.appendingPathComponent(first.filePath).deletingLastPathComponent()) }
         activeJobs.remove(record.id); kick()
     }
-    func clearForSignOut() async {
-        guard let owner = api.tokens?.sub else { return }
+    func clearForAccountDeletion(owner: String) async {
+        // The server has accepted erasure and cleared the session by this point.
         for record in records() where record.ownerSub == owner { if !record.isFinished { await cancel(record) }; context.delete(record) }
         try? context.save()
     }

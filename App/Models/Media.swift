@@ -55,10 +55,14 @@ struct AuthTokens: Codable, Sendable {
 }
 struct PolicyDocument: Decodable, Sendable {
     let version: String; let isDraft: Bool; let terms: [String: String]; let privacy: [String: String]
+    let reading: PolicyReading?
     var language: String { Locale.preferredLanguages.first?.hasPrefix("zh") == true ? "zh" : "en" }
     var termsText: String { terms[language] ?? terms["en"] ?? "" }
     var privacyText: String { privacy[language] ?? privacy["en"] ?? "" }
 }
+struct PolicyReading: Decodable, Sendable { let terms: [String: PolicyReadingText]; let privacy: [String: PolicyReadingText] }
+struct PolicyReadingText: Decodable, Sendable { let title: String; let sections: [PolicyReadingSection] }
+struct PolicyReadingSection: Decodable, Sendable { let title: String; let text: String }
 struct DeletionReceipt: Codable, Sendable {
     let requestId: String; let receipt: String; let requestedAt: String; let deleteBy: String; let state: String
     var ownerSub: String? = nil

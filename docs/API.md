@@ -12,7 +12,7 @@ Registration also takes `preferredUsername`, `givenName`, `familyName`, `gender`
 
 ## Policies
 
-`GET /api/mobile/policies` returns `{version,isDraft,terms:{en,zh},privacy:{en,zh}}`. `POST /api/mobile/consent` takes `{acceptedTerms:true,acknowledgedPrivacy:true,termsVersion,privacyVersion}`. Registration uses the same fields. Timestamps are assigned by the server and bound to the authenticated subject. A mobile session without current acknowledgement can reach the consent route, but cannot access protected media.
+`GET /api/mobile/policies` returns `{version,isDraft,terms:{en,zh},privacy:{en,zh}}`, with optional `reading:{terms:{en,zh},privacy:{en,zh}}`; each reading document contains `title` and `sections:[{title,text}]`. The reading extension preserves the legacy text bodies and consent version; clients fall back to plain text when it is absent. `POST /api/mobile/consent` takes `{acceptedTerms:true,acknowledgedPrivacy:true,termsVersion,privacyVersion}`. Registration uses the same fields. Timestamps are assigned by the server and bound to the authenticated subject. A mobile session without current acknowledgement can reach the consent route, but cannot access protected media.
 
 ## Media
 

@@ -31,13 +31,13 @@ private struct APIResponseFailure: Decodable { let error: String?; let code: Str
     private var accountKey: String { "session:" + (baseURL?.absoluteString ?? "unconfigured") }
     private var receiptKey: String { "deletion:" + (baseURL?.absoluteString ?? "unconfigured") }
 
-    init(baseURL: URL? = nil) {
+    init(baseURL: URL? = nil, session: URLSession? = nil) {
         let configured = baseURL ?? URL(string: Bundle.main.object(forInfoDictionaryKey: "PHAPIBaseURL") as? String ?? "")
         self.baseURL = configured?.host == nil ? nil : configured
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpShouldSetCookies = false
         configuration.timeoutIntervalForRequest = 30
-        self.network = URLSession(configuration: configuration)
+        self.network = session ?? URLSession(configuration: configuration)
         tokens = try? Keychain.read(AuthTokens.self, account: accountKey)
         deletionReceipt = try? Keychain.read(DeletionReceipt.self, account: receiptKey)
     }

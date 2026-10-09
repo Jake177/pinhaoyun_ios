@@ -34,7 +34,7 @@ spacing:
   transfer-row-padding: "6pt"
   content-gap: "8pt"
   stack-gap: "12pt"
-  brand-vertical-padding: "16pt"
+  brand-vertical-padding: "8pt"
   section-gap: "20pt"
 components:
   media-badge:
@@ -50,8 +50,8 @@ components:
   transfer-title:
     typography: "{typography.headline}"
   brand-mark:
-    width: "64pt"
-    height: "64pt"
+    width: "48pt"
+    height: "48pt"
 ---
 
 # Design System: PinHaoYun iOS
@@ -103,7 +103,7 @@ The UI uses an adaptive iOS palette rather than a custom light/dark hex palette.
 
 | Token / native style | Observed use |
 | --- | --- |
-| `brand-title` / `.largeTitle.bold()` | Authentication brand name. |
+| `brand-title` / `.title.bold()` | Authentication brand name. |
 | Native navigation title | Root Library, Transfers and Account use the default large-title behavior; detail, account deletion, policy and media information explicitly use inline titles. |
 | `title2` / `.title2` | Placeholder symbols and deletion-receipt status. |
 | `title2-bold` / `.title2.bold()` | Consent and account-deletion introductions. |
@@ -114,7 +114,7 @@ The UI uses an adaptive iOS palette rather than a custom light/dark hex palette.
 | `caption` / `.caption` | Transfer state and completed-byte counter; the counter also uses `.monospacedDigit()`. |
 | `media-badge` / `.caption2.bold()` | Live Photo marker and video duration. |
 
-**The System Type Rule.** Keep semantic text styles so Dynamic Type can resize them; do not convert this table into fixed point-size constants. Transfer filenames currently allow two lines; accessibility-size behavior remains a verification item.
+**The System Type Rule.** Keep semantic text styles so Dynamic Type can resize them; do not convert this table into fixed point-size constants. Transfer filenames allow two lines at ordinary sizes and unrestricted wrapping at accessibility sizes. State and byte counts can stack vertically when width is constrained.
 
 English is the string-catalog source language, with Simplified Chinese entries. Native labels use localized keys; explicitly computed action/state labels use `String(localized:)`. Dates and byte counts use locale-aware formatters. Filenames, backend messages and policy bodies remain content. Runtime localization coverage and truncation are not certified by this document.
 
@@ -124,17 +124,17 @@ Root sections use `TabView`, each with its own `NavigationStack`. Hierarchy uses
 
 - **Grid:** adaptive `LazyVGrid`, minimum cell width 110 pt, `grid-gap` between rows and columns. Cells are square, thumbnails fill and clip. Column count follows available width; no authored breakpoints exist.
 - **Chronology:** day sections use `section-gap` in a leading-aligned `LazyVStack` with pinned headers. Headings use `content-gap` vertically and `stack-gap` horizontally, full width with semantic background.
-- **Transfers:** native `List` rows use leading stacks with `content-gap` and `transfer-row-padding` vertically. State and bytes share a row, followed by progress, error and recovery actions when applicable.
+- **Transfers:** native `List` rows use leading stacks with `content-gap` and `transfer-row-padding` vertically. State and uploaded/total bytes share a row or stack at constrained widths. In-progress and history sections remain separate; completed rows use compact padding.
 - **Forms:** authentication, account, consent, deletion and metadata use native `Form` sections, without a bespoke card layout.
 - **Brand introduction:** `brand-mark` size, `stack-gap`, `brand-vertical-padding` and a clear form-row background.
-- **Touch:** Library filter/add labels explicitly use minimum 44 × 44 pt frames. Other controls rely on native controls; effective targets require runtime verification.
+- **Touch:** The Library add action has an explicit 44 × 44 pt frame; the filter uses a visible icon-and-title label with at least 44 pt height. Other controls rely on native controls; effective targets require runtime verification.
 - **Detail:** only the background extends outside safe areas. Controls occupy native bars and safe-area insets. Originals fit without cropping; root tabs are hidden.
 
 The interface is iPhone-first. Its adaptive grid does not establish a custom tablet or split-view composition. Orientation and actual viewport behavior require app verification.
 
 ## Elevation & Depth
 
-There are no authored shadows, gradients or custom blur layers. Native grouped sections, image contrast, pinned heading backgrounds and system materials provide separation. Transfer explanations use `.bar`; detail success/recovery notices use `.regularMaterial`. Bars, sheets, dialogs and standard controls retain platform treatment.
+There are no authored shadows, gradients or custom blur layers. Native grouped sections, image contrast, pinned heading backgrounds and system materials provide separation. Transfer explanations live in a native DisclosureGroup; detail progress, success and recovery notices use `.regularMaterial`. Bars, sheets, dialogs and standard controls retain platform treatment.
 
 **The Native Material Rule.** Use the existing system material for notices and bars; do not turn those components into custom floating cards or hand-built glass.
 
@@ -150,9 +150,9 @@ System button styles, form sections, fields, menus, pickers, dialogs and sheets 
 
 ### Buttons
 
-Use the implemented platform hierarchy: `.borderedProminent` for the empty Library add action, `.bordered` for transfer Retry, `.borderless` for transfer cancellation, `.plain` for media links and native form-row/toolbar buttons elsewhere. Destructive actions use `.destructive`; the account-deletion navigation link is explicitly red. Native disabled/pressed appearances remain intact; no custom hover treatment exists.
+Use the implemented platform hierarchy: `.borderedProminent` for authentication, consent and the empty Library add action, `.bordered` for transfer Retry, `.borderless` for transfer cancellation, `.plain` for media links and native form-row/toolbar buttons elsewhere. Destructive actions use `.destructive`; the account-deletion navigation link is explicitly red. Native disabled/pressed appearances remain intact; no custom hover treatment exists.
 
-Busy form actions keep their title and show a trailing `ProgressView` after a spacer. Authentication/consent submission and sign-out disable while busy. Save/export controls disable during loading or saving.
+Busy form actions keep their title and show a trailing `ProgressView` after a spacer. Authentication/consent submission and sign-out disable while busy. Authentication substeps use a local NavigationStack path, system back controls, compact task titles, screen-scoped focus progression and a keyboard Done action. Long-form primary actions occupy a bottom safe-area bar. Save/export controls disable during loading or saving.
 
 ### Inputs / Fields
 
@@ -160,7 +160,7 @@ Native `TextField`, `SecureField`, `Toggle` and `Picker` appear in forms. Email 
 
 ### Navigation
 
-The system tab bar uses Library (`photo.on.rectangle`), Transfers (`arrow.up.arrow.down`) and Account (`person.crop.circle`). Library filtering uses a native `Menu`/`Picker`; add is a toolbar action. Detail retains the system back path, hides root tabs and puts save, share, information and cloud deletion in the native bottom toolbar. Policy/information sheets provide Done.
+The system tab bar uses Library (`photo.on.rectangle`), Transfers (`arrow.up.arrow.down`) and Account (`person.crop.circle`). Library filtering uses a native `Menu`/`Picker` with its current selection continuously visible; filtered empty results offer Show all media. Add is a toolbar action. Detail retains the system back path, hides root tabs and puts save, share, information and cloud deletion in the native bottom toolbar. Policy/information sheets provide Done.
 
 ### Native Sections and Notices
 
@@ -172,21 +172,21 @@ A media cell keeps a neutral square until a thumbnail is available; its fallback
 
 ### Transfer Row
 
-Rows preserve `TransferRecord.id` identity. A filename, readable state, monospaced completed bytes and unfinished progress remain visible. Failed rows expose an error and Retry; unfinished rows expose Cancel upload. Symbols are `checkmark.circle.fill` for completed, `exclamationmark.circle` for failed and `arrow.up.circle` otherwise. State text accompanies the symbol.
+Rows preserve `TransferRecord.id` identity. A filename, readable state, monospaced uploaded/total bytes and unfinished progress remain visible. Failed rows expose an error and Retry; unfinished rows expose Cancel upload. Symbols are `checkmark.circle.fill` for completed, `exclamationmark.circle` for failed `xmark.circle` for cancelled and `arrow.up.circle` otherwise. State text accompanies the symbol.
 
 History is scoped to the signed-in owner. Normal Account sign-out cancels unfinished uploads after confirmation and keeps completed/cancelled rows associated with their original owner; another account does not see those rows.
 
 ### Empty, Loading and Recovery States
 
-`ContentUnavailableView` handles empty Library/Transfers and unavailable media. The empty Library offers the add action. `ProgressView` handles loading. Network recovery names Try again or Refresh access; Photos permission guidance names Settings or Save to Files. There is no skeleton or illustration system.
+`ContentUnavailableView` handles empty Library/Transfers and unavailable media. The empty Library offers the add action. `ProgressView` handles loading. Media recovery names the failed action: loading, saving, file preparation or cloud deletion. Photos permission recovery offers Open Settings and file sharing. There is no skeleton or illustration system.
 
-Account data and policy loading have independent state. Initial account loading uses a labeled `ProgressView`; policy loading and its error/retry remain in the Privacy and account section. A policy failure does not hide an already-loaded storage summary. Consent similarly names policy loading, provides Try again on error and disables retry during that request. Reloading consent policy resets agreement; Agree and continue requires an available policy, explicit agreement and no active submission.
+Account data and policy loading have independent state. Initial account loading uses a labeled `ProgressView`; policy loading and its error/retry remain in the Privacy section. A policy failure does not hide an already-loaded storage summary. Consent separates policy-loading errors from agreement-submission errors, with corresponding reload and submit actions. Reloading consent policy resets agreement; Agree and continue requires an available policy, explicit agreement and no active submission.
 
 ### Confirmation and Receipt Recovery
 
 Account sign-out presents a native confirmation dialog when the current owner has unfinished uploads. Its destructive action explicitly says Cancel uploads and sign out, and the explanation identifies what is cancelled and what is kept. With no unfinished uploads, Account sign-out proceeds directly. This is a consequence-specific dialog, not a replacement for native navigation.
 
-The deletion receipt remains a native list with readable requested/checking/completed status, dates when available and Check deletion status. Return to sign in dismisses that view without erasing the saved receipt. Authentication exposes Check account deletion when a saved receipt exists, restoring the same status path. Receipt presentation stays separate from a promise that deletion has completed.
+The deletion receipt remains a native list with readable requested/checking/completed status, dates when available, last checked time and a non-repeatable status check while loading. Return to sign in dismisses that view without erasing the saved receipt. Authentication exposes Check account deletion when a saved receipt exists, restoring the same status path. Receipt presentation stays separate from a promise that deletion has completed.
 
 ### Brand Asset
 
@@ -210,3 +210,11 @@ The AppIcon and BrandMark PNGs are 1024 × 1024 rasters of the pre-existing vect
 - **Don't** crop originals in detail just because thumbnails use square crops.
 - **Don't** turn a media badge into a filter chip or the identity artwork's navy into a second UI tint.
 - **Don't** infer completed accessibility, localization, Dark Mode or device QA from source-derived rules.
+
+## UX interaction refinements
+
+The original preparation session is shared only between Library and Transfers. It reports processed item counts before durable enqueue, supports stopping preparation after the current export returns, and leaves already-queued uploads running. Authentication changes stop further enqueue for the previous owner. Failed exports can be selected again; temporary files that were not enqueued are removed.
+
+Photo detail uses a native UIScrollView for pinch/double-tap zoom, adjustable accessibility actions and Reset zoom. Live Photos have visible playback guidance and a button equivalent. Video item failures expose a loading retry. Media information supports filename selection and copying.
+
+Account-erasure cleanup happens only after server acceptance, using the captured owner after tokens are cleared. A rejected request retains original files, multipart progress and history. Policy reading uses optional server-provided headings and paragraphs; legacy plain text remains available and the existing consent version and wording are unchanged.

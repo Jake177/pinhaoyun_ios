@@ -28,9 +28,10 @@ Never put AWS keys, Cognito client secrets, Stripe secrets or user tokens in Xco
 - Email sign-in, registration, verification, resend, password reset and token refresh.
 - Explicit, server-recorded policy acknowledgement; Simplified Chinese and English UI.
 - Capture-time library, original photo/video/Live Photo preview, download, sharing and cloud deletion.
+- Visible original-preparation progress and partial-failure summaries. Keep the app open until originals enter the durable queue.
 - Durable multipart uploads, on-disk originals, background URLSession transfers, recovery, retry and cancellation. Live Photo components remain paired. Maximum original size: 2GB; part size: 10MiB.
 - Quota and plan display. Account erasure immediately blocks shared Web/iOS access and is processed server-side, with a receipt that survives a dropped response and can be reopened from sign-in.
-- Sign-out confirms cancellation of unfinished uploads and preserves per-account transfer history. Policy loading has independent retry controls.
+- Sign-out confirms cancellation of unfinished uploads and preserves per-account transfer history. Policy loading has independent retry controls. Authentication uses native back navigation, inline validation and reachable primary actions; policy reading has bilingual sections, draft/version metadata and legacy fallback.
 
 Automatic camera backup, network/time-window settings, maps/location editing, advanced library organization and purchases are subsequent iterations. The app does not expose unfinished controls for these features.
 
@@ -47,7 +48,7 @@ The Lambda processing layers are reused by immutable ARN; development originals,
 
 ## Tests and project maintenance
 
-Run **Product → Test** in Xcode. Five core tests cover wire-format compatibility, disk-backed transfer state, sign-out history and Keychain receipt recovery. The sixth, optional native cloud upload test requires explicitly supplied synthetic localhost test credentials; it skips by default. All six passed locally. No production credentials are used by tests.
+Run **Product → Test** in Xcode. Eight core tests cover wire-format compatibility, input validation, disk-backed transfer state, sign-out history, Keychain receipt recovery, photo zoom and acceptance-gated erasure cleanup. The ninth, optional native cloud upload test requires explicitly supplied synthetic localhost test credentials; it skips by default. All nine passed locally. No production credentials are used by tests.
 
 The conventional Xcode project is checked in. After adding source/resource files, regenerate stable file references with `python3 scripts/generate-project.py`. No CocoaPods, Flutter, React Native or project-generation package is required. Brand artwork is derived from the existing PinHaoYun vector mark; compiled asset-catalog PNGs are checked in.
 

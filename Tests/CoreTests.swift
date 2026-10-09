@@ -4,6 +4,79 @@ import UIKit
 @testable import PinHaoYun
 
 final class CoreTests: XCTestCase {
+    func testAuthenticationInputValidationAndLegacyPolicyCompatibility() throws {
+        XCTAssertTrue(AuthInput.validEmail("tester+photos@example.com"))
+        for value in ["", "tester", "tester@example", "tester @example.com", "a@@example.com"] { XCTAssertFalse(AuthInput.validEmail(value)) }
+        XCTAssertTrue(AuthInput.validNewPassword("Example-pass!2026"))
+        for value in ["short", "alllowercase1!", "ALLUPPERCASE1!", "NoNumbers!", "NoSymbols2026", "BlankSymbol2026 "] { XCTAssertFalse(AuthInput.validNewPassword(value)) }
+        let policy = try JSONDecoder().decode(PolicyDocument.self, from: Data(#"{"version":"legacy","isDraft":true,"terms":{"en":"terms"},"privacy":{"en":"privacy"}}"#.utf8))
+        XCTAssertNil(policy.reading)
+        XCTAssertEqual(policy.termsText, "terms")
+    }
+    @MainActor func testPhotoZoomKeepsAspectRatioAndAccessibleZoomLimits() {
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 800, height: 400)).image { _ in UIColor.blue.setFill(); UIRectFill(CGRect(x: 0, y: 0, width: 800, height: 400)) }
+        let view = PhotoZoomView(frame: CGRect(x: 0, y: 0, width: 375, height: 600))
+        view.setImage(image); view.layoutIfNeeded()
+        XCTAssertEqual(view.contentSize.width, 375, accuracy: 0.1)
+        XCTAssertEqual(view.contentSize.height, 187.5, accuracy: 0.1)
+        view.accessibilityIncrement(); XCTAssertEqual(view.zoomScale, 1.5, accuracy: 0.01)
+        for _ in 0..<20 { view.accessibilityIncrement() }
+        XCTAssertEqual(view.zoomScale, 4, accuracy: 0.01)
+        for _ in 0..<20 { view.accessibilityDecrement() }
+        XCTAssertEqual(view.zoomScale, 1, accuracy: 0.01)
+    }
+    @MainActor func testAccountErasurePreservesQueueUntilServerAcceptance() async throws {
+        for responseStatus in [503, 200] {
+            DeletionFixtureProtocol.configure(status: responseStatus)
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.protocolClasses = [DeletionFixtureProtocol.self]
+            let session = URLSession(configuration: configuration)
+            defer { session.invalidateAndCancel() }
+            let url = URL(string: "https://deletion-fixture-" + UUID().uuidString + ".invalid")!
+            defer { Keychain.remove(account: "session:" + url.absoluteString); Keychain.remove(account: "deletion:" + url.absoluteString) }
+            let api = APIClient(baseURL: url, session: session)
+            try api.saveTokens(DeletionFixtureProtocol.tokens)
+            let container = try ModelContainer(for: TransferRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+            let manager = TransferManager(api: api, container: container, identifier: "com.jake177.pinhaoyun.deletion-test." + UUID().uuidString)
+            let folderName = UUID().uuidString
+            let folder = TransferManager.filesRoot.appendingPathComponent(folderName)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: folder) }
+            let original = folder.appendingPathComponent("fixture.png")
+            try Data(repeating: 1, count: 12).write(to: original)
+            let component = UploadComponent(filePath: folderName + "/fixture.png", fileName: "fixture.png", contentType: "image/png", size: 12, mediaType: "PHOTO", mediaRole: "image")
+            let pending = try TransferRecord(ownerSub: "fixture-owner", displayName: "pending", components: [component]); pending.state = "failed"; pending.completedBytes = 4
+            let history = try TransferRecord(ownerSub: "fixture-owner", displayName: "history", components: [component]); history.state = "completed"
+            let otherFolderName = UUID().uuidString
+            let otherFolder = TransferManager.filesRoot.appendingPathComponent(otherFolderName)
+            try FileManager.default.createDirectory(at: otherFolder, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: otherFolder) }
+            let otherOriginal = otherFolder.appendingPathComponent("other.png")
+            try Data(repeating: 2, count: 8).write(to: otherOriginal)
+            var otherComponent = component; otherComponent.filePath = otherFolderName + "/other.png"
+            let other = try TransferRecord(ownerSub: "other-owner", displayName: "other", components: [otherComponent]); other.state = "completed"
+            for record in [pending, history, other] { manager.context.insert(record) }
+            try manager.context.save()
+            do {
+                try await requestAccountDeletion(api: api, transfers: manager, password: "mock-only")
+                XCTAssertEqual(responseStatus, 200)
+                XCTAssertNil(api.tokens)
+                XCTAssertEqual(manager.records().map(\.ownerSub), ["other-owner"])
+                XCTAssertFalse(FileManager.default.fileExists(atPath: original.path))
+                XCTAssertNotNil(api.deletionReceipt)
+            } catch {
+                XCTAssertEqual(responseStatus, 503, error.localizedDescription)
+                XCTAssertEqual(manager.records().count, 3)
+                XCTAssertEqual(pending.state, "failed")
+                XCTAssertEqual(pending.completedBytes, 4)
+                XCTAssertEqual(history.state, "completed")
+                XCTAssertTrue(FileManager.default.fileExists(atPath: original.path))
+                XCTAssertNotNil(api.tokens)
+                XCTAssertEqual(api.deletionReceipt?.state, "REQUESTING")
+            }
+            XCTAssertTrue(FileManager.default.fileExists(atPath: otherOriginal.path))
+        }
+    }
     func testLegacyMixedLibraryDecodesAndUsesCaptureTimeline() throws {
         let data = Data(#"{"videos":[{"id":"photo-1","type":"PHOTO","originalName":"IMG_001.HEIC","originalPhotoUrl":"https://example.invalid/original","liveVideoUrl":"https://example.invalid/live","captureTime":"2025-01-02T03:04:05Z","createdAt":"2026-10-08T00:00:00Z"},{"id":"video-1","type":"VIDEO","fileLastModified":"2024-01-01T00:00:00.000Z"}],"nextCursor":null,"hasMore":false}"#.utf8)
         let page = try JSONDecoder().decode(LibraryPage.self, from: data)
@@ -120,4 +193,26 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(after.usedBytes - before.usedBytes, Int64(bytes.count))
         // The generated QA image remains in the isolated account for visual QA.
     }
+}
+
+private final class DeletionFixtureProtocol: URLProtocol, @unchecked Sendable {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var deletionStatus = 503
+    static var tokens: AuthTokens { AuthTokens(idToken: "mock-id", accessToken: "mock-access", refreshToken: "mock-refresh", expiresIn: 60, username: "fixture-owner", sub: "fixture-owner", email: "fixture@example.invalid", requiresConsent: false) }
+    static func configure(status: Int) { lock.withLock { deletionStatus = status } }
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        let path = request.url!.path
+        let status = path.hasSuffix("sign-in") ? 200 : Self.lock.withLock { Self.deletionStatus }
+        let data: Data
+        if path.hasSuffix("sign-in") { data = try! JSONEncoder().encode(Self.tokens) }
+        else if status == 200 {
+            data = Data(#"{"requestId":"fixture","receipt":"mock-proof","requestedAt":"2026-10-09T00:00:00Z","deleteBy":"2026-11-08T00:00:00Z","state":"PENDING"}"#.utf8)
+        } else { data = Data(#"{"error":"Fixture service unavailable"}"#.utf8) }
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data); client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
 }
