@@ -7,10 +7,11 @@ struct TransfersView: View {
     @Environment(TransferManager.self) private var manager
     @Environment(PhotoImportSession.self) private var photoImport
     @Query(sort: \TransferRecord.createdAt, order: .reverse) private var records: [TransferRecord]
-    private var visible: [TransferRecord] { records.filter { $0.ownerSub == api.tokens?.sub } }
+    private var visible: [TransferRecord] { records.filter { $0.ownerSub == api.tokens?.sub && ($0.environment.isEmpty || $0.environment == api.baseURL?.absoluteString) } }
     var body: some View {
         NavigationStack {
             List {
+                Section { NavigationLink { BackupSettingsView() } label: { VStack(alignment: .leading, spacing: 8) { Text("Automatic backup").font(.headline); BackupStatusView() } } }
                 if photoImport.total > 0 && photoImport.owner == api.tokens?.sub {
                     Section { PhotoImportStatusView() }
                 }
@@ -53,7 +54,9 @@ private struct TransferRow: View {
                 }.font(.caption).foregroundStyle(.secondary)
                 if !record.isFinished { ProgressView(value: record.progress).accessibilityLabel("Upload progress") }
             }.accessibilityElement(children: .combine)
-            if let message = record.message { Text(message).font(.footnote).foregroundStyle(.red) }
+            if record.source == "automatic" { Text("Automatic backup").font(.caption).foregroundStyle(.secondary) }
+            if let reason = record.pauseReason { Text(reason).font(.footnote).foregroundStyle(.secondary) }
+            if let message = record.message { Text(message).font(.footnote).foregroundStyle(record.state == "failed" ? Color.red : Color.secondary) }
             if !record.isFinished {
                 HStack {
                     if record.state == "failed" { Button("Retry") { manager.retry(record) }.buttonStyle(.bordered) }

@@ -1,55 +1,59 @@
 # PinHaoYun iOS
 
-Native iPhone client for PinHaoYun, built with SwiftUI and Apple frameworks. Minimum deployment target: iOS 17. Development uses isolated AWS resources in Sydney; production account and library compatibility is implemented in the companion Web backend branch.
+Native SwiftUI iPhone client, iOS 17+, Simplified Chinese and English. Version 0.2 is a personal-device automatic-backup beta using separate Sydney AWS resources. Production Web accounts and storage remain untouched.
 
-## Open and run locally
+## Run
 
-1. Open `PinHaoYun.xcodeproj` in Xcode and select the `PinHaoYun` scheme and an iPhone simulator. A paid developer membership is not needed for simulator builds.
-2. Start the companion backend checkout (`../PinHaoYun_backend`) with its ignored development `.env.local` file:
+Open `PinHaoYun.xcodeproj`, select the `PinHaoYun` scheme, then build for a simulator or paired iPhone. The development configuration points to the isolated HTTPS API:
 
-   ```sh
-   cd ../PinHaoYun_backend
-   pnpm install --frozen-lockfile
-   node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3000 --webpack
-   ```
+`https://tqf3pxrgwm.ap-southeast-2.awsapprunner.com`
 
-3. The checked-in development configuration points to `http://127.0.0.1:3000`. To override it, create ignored `Config/Local.xcconfig`:
+For physical devices, sign into Xcode and choose your own Personal Team. Put local overrides in ignored `Config/Local.xcconfig`:
 
-   ```text
-   API_BASE_URL = https:/$()/your-approved-api.example
-   ```
+```text
+DEVELOPMENT_TEAM = YOUR_PERSONAL_TEAM_ID
+# Optional local simulator API override:
+# API_BASE_URL = http:/$()/127.0.0.1:3000
+```
 
-4. Build and run. Sign in or register through the app. The current isolated beta terms are visibly marked as drafts.
+Free Personal Team signing supports local device testing and requires periodic re-signing/reinstallation; TestFlight requires Apple Developer Program membership. Xcode's signing account and the iPhone's iCloud account can differ. Developer Mode and the developer certificate must be trusted on the device.
 
-Never put AWS keys, Cognito client secrets, Stripe secrets or user tokens in Xcode build settings or the app bundle. Authentication secrets stay on the server. Tokens and erasure receipts use the device-only Keychain.
+To run the companion backend locally with its ignored development environment:
 
-## Core capabilities
+```sh
+cd ../PinHaoYun_backend
+pnpm install --frozen-lockfile
+pnpm exec next dev --hostname 127.0.0.1 --port 3000 --webpack
+```
 
-- Email sign-in, registration, verification, resend, password reset and token refresh.
-- Explicit, server-recorded policy acknowledgement; Simplified Chinese and English UI.
-- Capture-time library, original photo/video/Live Photo preview, download, sharing and cloud deletion.
-- Visible original-preparation progress and partial-failure summaries. Keep the app open until originals enter the durable queue.
-- Durable multipart uploads, on-disk originals, background URLSession transfers, recovery, retry and cancellation. Live Photo components remain paired. Maximum original size: 2GB; part size: 10MiB.
-- Quota and plan display. Account erasure immediately blocks shared Web/iOS access and is processed server-side, with a receipt that survives a dropped response and can be reopened from sign-in.
-- Sign-out confirms cancellation of unfinished uploads and preserves per-account transfer history. Policy loading has independent retry controls. Authentication uses native back navigation, inline validation and reachable primary actions; policy reading has bilingual sections, draft/version metadata and legacy fallback.
+Hosted development registration is restricted to the configured test email allowlist. Read and acknowledge the visibly marked draft policies before using this beta. Do not place AWS credentials, client secrets, tokens or private test details in tracked files or the app bundle.
 
-Automatic camera backup, network/time-window settings, maps/location editing, advanced library organization and purchases are subsequent iterations. The app does not expose unfinished controls for these features.
+## Capabilities
 
-## Infrastructure and integration checks
+- Email authentication, registration/verification, password reset, refresh and explicit server-recorded policy acknowledgement.
+- Password reset uses email → code → matching new-password/confirmation pages. As agreed, Cognito verifies the code at final save; incorrect/expired codes return to the code page.
+- Capture-time photo/video library, Live Photo preview, original downloads/sharing, cloud deletion and storage/plan display.
+- Durable multipart transfers with recovery, retry, cancellation and background URLSession. Limits remain 2GB per original and 10MiB per part. Manual original preparation requires keeping the app open until enqueue.
+- Automatic backup under **Account → Automatic backup**, with status and waiting reasons in Transfers. Default off, only newly accessible assets, videos off, Wi-Fi only, no daily window. Enabling asks for explicit scope confirmation.
+- Existing-photo opt-in, independent video and cellular options, and a local-time daily window that can cross midnight and follows timezone/DST changes. Started items may finish outside the window.
+- PhotoKit baseline IDs and incremental reconciliation include old photos imported later. Limited access processes only selected assets; hidden/unsupported/oversized originals are excluded or show a reason. Live Photo image and motion stay one backup item regardless of the video switch.
+- Per-account/environment settings and ledger, at most three staged automatic items, cancellable original streaming, storage checks and local-file cleanup. Turning backup off preserves automatic progress; manual work runs independently. Sign-out cancels unfinished transfers and turns backup off.
+- Cloud deletion suppresses automatic re-upload by content fingerprint; manual restoration remains available. Device Photos deletion does not delete cloud copies.
+- Account erasure with reauthentication, immediate access blocking, async cleanup and a durable receipt. The isolated test account is separate from production; production compatibility covers shared Web/iOS accounts.
+- Local beta diagnostics export contains execution times, device/network state and counts, without photos, email, filenames or credentials. Diagnostics are not uploaded automatically.
 
-`infra/development.template.json` is generated by `python3 infra/template.py`. `node scripts/deploy-staging.mjs` packages the companion backend Lambdas and provisions only the `pinhaoyun-ios-dev` namespace using the `pinhaoyun` AWS profile. It checks the account, retains storage on stack removal, writes ignored local configuration and does not print secrets.
+iOS schedules background work and cannot guarantee a precise start or work after force quit. Reopening resumes checks. Actual PhotoKit/iCloud/background behavior requires the physical-device acceptance process below.
 
-The Lambda processing layers are reused by immutable ARN; development originals, thumbnails, profiles, user pool, table, queues and deletion jobs are separate from production. The deployment script requires the companion backend's installed dependencies for Lambda bundling. Its IAM roles are limited to the development resources.
+## Validation and infrastructure
 
-- `scripts/integration-test.mjs`: creates synthetic `.invalid` accounts with email suppressed; exercises real authentication, consent, Cookie/Bearer compatibility, S3 multipart recovery, accounting, download integrity and ownership checks.
-- `scripts/erasure-test.mjs` and `scripts/erasure-completion.mjs`: erase only those synthetic fixtures, inspect actual cleanup, and verify same-email identity isolation against stale credentials and a late object.
-- Local fixture credentials and outputs are ignored and written with mode `0600`.
-- `scripts/recover-empty-development.mjs` is only for a failed, never-initialized initial stack. It refuses to remove any table/bucket with data and is never a general environment reset.
+Current evidence: **46 backend tests**, TypeScript and changed-file lint pass; **15 native tests pass on iPhone 12/iOS 27.2 and the small iOS 26.5 simulator**, including two explicitly enabled synthetic-cloud transport checks. Hosted lifecycle integration verifies byte integrity, exact quota, owner/token isolation, Web Cookie compatibility, deletion suppression, late-event cleanup, concurrent duplicates, lost-init response replay and completed-original recovery/cancellation. Synthetic tests do not establish authentic Live Photo export or background scheduling reliability.
 
-## Tests and project maintenance
+- `infra/template.py` / `scripts/deploy-staging.mjs`: isolated Cognito, S3, DynamoDB, queues, processing/erasure functions and alarms. Reuses immutable processing layers with scoped IAM and 14-day Lambda logs.
+- `infra/api-template.py` / `scripts/deploy-api.mjs`: ECR, CodeBuild and manually deployed API-only App Runner, 0.5 vCPU, 1GB, maximum one instance. Container checks run before publication. Secrets are read at runtime.
+- `scripts/integration-test.mjs`, `backup-integration-test.mjs`, `erasure-test.mjs` and `erasure-completion.mjs`: disposable isolated fixtures only. Configuration/credentials/proofs use ignored local files with mode `0600`.
 
-Run **Product → Test** in Xcode. Eight core tests cover wire-format compatibility, input validation, disk-backed transfer state, sign-out history, Keychain receipt recovery, photo zoom and acceptance-gated erasure cleanup. The ninth, optional native cloud upload test requires explicitly supplied synthetic localhost test credentials; it skips by default. All nine passed locally. No production credentials are used by tests.
+Use Product → Test for the 13 local regression checks. Two cloud checks skip unless synthetic fixture credentials and the approved development endpoint are supplied as `TEST_RUNNER_PH_INTEGRATION_EMAIL`, `TEST_RUNNER_PH_INTEGRATION_PASSWORD`, `TEST_RUNNER_PH_INTEGRATION_BASE_URL`. They restore the prior Keychain session. Simulator visual QA may explicitly set `TEST_RUNNER_PH_KEEP_QA_SESSION=1`; physical-device tests always restore the prior session.
 
-The conventional Xcode project is checked in. After adding source/resource files, regenerate stable file references with `python3 scripts/generate-project.py`. No CocoaPods, Flutter, React Native or project-generation package is required. Brand artwork is derived from the existing PinHaoYun vector mark; compiled asset-catalog PNGs are checked in.
+After adding source/resource files, run `python3 scripts/generate-project.py` to maintain stable Xcode references. There are no third-party Swift packages.
 
-See `docs/RELEASE.md` for validation evidence and remaining release gates. The Apple Developer Program, signing, physical-device background validation and final policy/operator details are required before TestFlight distribution. No production deployment or App Store publication has been performed.
+See [device acceptance](docs/DEVICE-ACCEPTANCE.md), [API contract](docs/API.md), [release evidence](docs/RELEASE.md) and [infrastructure status](infra/STATUS.md). Authentic Photos/iCloud tests and three days of real-device records are pending. Operator/contact details and final policies, membership, TestFlight, production rollout, maps and purchases remain later gates.

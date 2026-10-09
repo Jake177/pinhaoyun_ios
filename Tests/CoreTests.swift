@@ -9,6 +9,11 @@ final class CoreTests: XCTestCase {
         for value in ["", "tester", "tester@example", "tester @example.com", "a@@example.com"] { XCTAssertFalse(AuthInput.validEmail(value)) }
         XCTAssertTrue(AuthInput.validNewPassword("Example-pass!2026"))
         for value in ["short", "alllowercase1!", "ALLUPPERCASE1!", "NoNumbers!", "NoSymbols2026", "BlankSymbol2026 "] { XCTAssertFalse(AuthInput.validNewPassword(value)) }
+        XCTAssertTrue(AuthInput.validResetPassword("Example-pass!2026", confirmation: "Example-pass!2026"))
+        XCTAssertFalse(AuthInput.validResetPassword("Example-pass!2026", confirmation: ""))
+        XCTAssertFalse(AuthInput.validResetPassword("Example-pass!2026", confirmation: "Example-pass!2027"))
+        XCTAssertFalse(AuthInput.validResetPassword("Example-pass!2026", confirmation: "example-pass!2026"))
+        XCTAssertFalse(AuthInput.validResetPassword("weak", confirmation: "weak"))
         let policy = try JSONDecoder().decode(PolicyDocument.self, from: Data(#"{"version":"legacy","isDraft":true,"terms":{"en":"terms"},"privacy":{"en":"privacy"}}"#.utf8))
         XCTAssertNil(policy.reading)
         XCTAssertEqual(policy.termsText, "terms")
@@ -156,8 +161,15 @@ final class CoreTests: XCTestCase {
         guard let email = env["PH_INTEGRATION_EMAIL"] ?? env["TEST_RUNNER_PH_INTEGRATION_EMAIL"],
               let password = env["PH_INTEGRATION_PASSWORD"] ?? env["TEST_RUNNER_PH_INTEGRATION_PASSWORD"] else { throw XCTSkip("Run explicitly with disposable localhost integration credentials.") }
         guard email.hasPrefix("ios-qa-"), email.hasSuffix("@example.invalid") else { XCTFail("Only synthetic development accounts may be used"); return }
-        let api = APIClient(baseURL: URL(string: "http://127.0.0.1:3000")!)
+        let base = env["PH_INTEGRATION_BASE_URL"] ?? env["TEST_RUNNER_PH_INTEGRATION_BASE_URL"] ?? "http://127.0.0.1:3000"
+        let api = APIClient(baseURL: URL(string: base)!)
+        let priorSession = api.tokens
+        defer { restoreIntegrationSession(priorSession, api: api, environment: env) }
         try await api.signIn(email: email, password: password)
+        if api.tokens?.requiresConsent == true {
+            let policy: PolicyDocument = try await api.request("/api/mobile/policies", authenticated: false)
+            try await api.accept(policy)
+        }
         XCTAssertFalse(api.tokens!.requiresConsent)
         let before: UserProfile = try await api.request("/api/user/profile")
         let container = try ModelContainer(for: TransferRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
@@ -168,6 +180,7 @@ final class CoreTests: XCTestCase {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 64, height: 64)).image { context in
             UIColor(hue: CGFloat.random(in: 0...1), saturation: 0.7, brightness: 0.8, alpha: 1).setFill()
             context.fill(CGRect(x: 0, y: 0, width: 64, height: 64))
+            (UUID().uuidString as NSString).draw(at: CGPoint(x: 1, y: 1), withAttributes: [.font: UIFont.systemFont(ofSize: 6), .foregroundColor: UIColor.white])
         }
         let bytes = try XCTUnwrap(image.pngData())
         try bytes.write(to: folder.appendingPathComponent("QA-native.png"))
@@ -192,6 +205,68 @@ final class CoreTests: XCTestCase {
         let after: UserProfile = try await api.request("/api/user/profile")
         XCTAssertEqual(after.usedBytes - before.usedBytes, Int64(bytes.count))
         // The generated QA image remains in the isolated account for visual QA.
+    }
+    @MainActor func testNativeAutomaticQueueSkipsDeletedCloudContent() async throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let email = env["PH_INTEGRATION_EMAIL"] ?? env["TEST_RUNNER_PH_INTEGRATION_EMAIL"],
+              let password = env["PH_INTEGRATION_PASSWORD"] ?? env["TEST_RUNNER_PH_INTEGRATION_PASSWORD"] else { throw XCTSkip("Enable explicitly with synthetic isolated integration credentials.") }
+        guard email.hasPrefix("ios-qa-"), email.hasSuffix("@example.invalid") else { XCTFail("Only synthetic development accounts may be used"); return }
+        let base = env["PH_INTEGRATION_BASE_URL"] ?? env["TEST_RUNNER_PH_INTEGRATION_BASE_URL"] ?? "http://127.0.0.1:3000"
+        let api = APIClient(baseURL: URL(string: base)!)
+        let priorSession = api.tokens
+        defer { restoreIntegrationSession(priorSession, api: api, environment: env) }
+        try await api.signIn(email: email, password: password)
+        if api.tokens?.requiresConsent == true {
+            let policy: PolicyDocument = try await api.request("/api/mobile/policies", authenticated: false); try await api.accept(policy)
+        }
+        let before: UserProfile = try await api.request("/api/user/profile")
+        let container = try ModelContainer(for: TransferRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let manager = TransferManager(api: api, container: container, identifier: "automatic-integration." + UUID().uuidString)
+        // This checks the real automatic transport, not PhotoKit scanning or hardware scheduling.
+        manager.automaticGate = { _ in nil }
+        manager.automaticCellularAllowed = true
+        let marker = UUID().uuidString
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 80, height: 80)).image { context in
+            UIColor.blue.setFill(); context.fill(CGRect(x: 0, y: 0, width: 80, height: 80))
+            (marker as NSString).draw(at: CGPoint(x: 1, y: 1), withAttributes: [.font: UIFont.systemFont(ofSize: 6), .foregroundColor: UIColor.white])
+        }
+        let bytes = try XCTUnwrap(image.pngData())
+        func enqueue() throws -> TransferRecord {
+            let folderName = UUID().uuidString, folder = TransferManager.filesRoot.appendingPathComponent(folderName)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try bytes.write(to: folder.appendingPathComponent("QA-auto.png"))
+            let component = UploadComponent(filePath: folderName + "/QA-auto.png", fileName: "QA-auto.png", contentType: "image/png", size: Int64(bytes.count), mediaType: "PHOTO", mediaRole: "image", photoId: UUID().uuidString.lowercased())
+            let id = try manager.enqueue(displayName: "QA automatic transport", components: [component], owner: api.tokens!.sub, source: "automatic", assetIdentifier: "synthetic-" + UUID().uuidString)
+            return manager.records().first { $0.id == id }!
+        }
+        func settle(_ record: TransferRecord) async throws {
+            let deadline = Date(timeIntervalSinceNow: 90)
+            while !record.isFinished && record.state != "failed" && Date.now < deadline { try await Task.sleep(for: .milliseconds(200)) }
+        }
+        let first = try enqueue(); await manager.resume(); await manager.resume(); try await settle(first)
+        XCTAssertEqual(first.state, "completed", first.message ?? "Automatic transport incomplete")
+        guard first.state == "completed" else { await manager.cancel(first); return }
+        let photoID = try XCTUnwrap(first.components.first?.photoId)
+        let after: UserProfile = try await api.request("/api/user/profile")
+        XCTAssertEqual(after.usedBytes - before.usedBytes, Int64(bytes.count))
+        let _: OKResponse = try await api.request("/api/videos/delete", method: "POST", body: ["mediaId": photoID, "mediaType": "PHOTO"])
+        let second = try enqueue(); try await settle(second)
+        XCTAssertEqual(second.state, "skipped", second.message ?? "Expected automatic suppression")
+        XCTAssertEqual(second.skipReason, "CLOUD_DELETED")
+        XCTAssertTrue(second.components.allSatisfy { $0.uploadId == nil })
+        let deadline = Date(timeIntervalSinceNow: 60)
+        var final: UserProfile = try await api.request("/api/user/profile")
+        while final.usedBytes != before.usedBytes && .now < deadline {
+            try await Task.sleep(for: .seconds(1)); final = try await api.request("/api/user/profile")
+        }
+        XCTAssertEqual(final.usedBytes, before.usedBytes)
+    }
+    @MainActor private func restoreIntegrationSession(_ prior: AuthTokens?, api: APIClient, environment: [String: String]) {
+        #if targetEnvironment(simulator)
+        if (environment["PH_KEEP_QA_SESSION"] ?? environment["TEST_RUNNER_PH_KEEP_QA_SESSION"]) == "1" { return }
+        #endif
+        api.clearTokens()
+        if let prior { try? api.saveTokens(prior) }
     }
 }
 
