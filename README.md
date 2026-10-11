@@ -56,4 +56,6 @@ Use Product → Test for the 13 local regression checks. Two cloud checks skip u
 
 After adding source/resource files, run `python3 scripts/generate-project.py` to maintain stable Xcode references. There are no third-party Swift packages.
 
+The approved cloud/single-puzzle-piece identity uses `Artwork/BrandMark.svg` as its vector master. Run `node scripts/render-icon.mjs` with the companion backend dependencies installed to export transparent light/dark in-app marks and default/dark/tinted Home Screen icons. Export checks prevent reintroducing the white in-app square. Build 4 carries this artwork; appearance variants follow the system's icon settings.
+
 See [device acceptance](docs/DEVICE-ACCEPTANCE.md), [API contract](docs/API.md), [release evidence](docs/RELEASE.md) and [infrastructure status](infra/STATUS.md). Authentic Photos/iCloud tests and three days of real-device records are pending. Operator/contact details and final policies, membership, TestFlight, production rollout, maps and purchases remain later gates.

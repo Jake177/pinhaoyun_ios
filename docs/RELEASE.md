@@ -1,5 +1,12 @@
 # Core and automatic-backup beta validation
 
+## Brand update — 12 October 2026, build 4
+
+- User selected the blue/cyan single-piece cloud concept. The clean two-path SVG master and recorded concept provenance replace the traced cloud/four-piece mark.
+- In-app light/dark marks have transparent backgrounds; default Home Screen uses a navy canvas, dark uses transparent brighter artwork, and tinted uses grayscale art. The default also avoids a white tile when Home Screen appearance is fixed independently of system Dark Mode.
+- Export assertions verify alpha and default opacity. Xcode asset compilation includes `UIAppearanceDark` and `ISAppearanceTintable` renditions. Small iOS 26.5 simulator checks show the transparent logo on light/dark sign-in, and native default/dark/tinted Home Screen rendering. The simulator and signed iPhone builds succeed without new warnings. Build 4 is installed on the paired iPhone using the existing Personal Team.
+- This is an artwork update; authentic Photos/iCloud/background and three-day acceptance remain the separate gates below.
+
 ## 0.2 personal-device beta — 9 October 2026
 
 - Isolated HTTPS App Runner API is deployed, with 0.5 vCPU, 1GB, maximum one instance, a health check, runtime secrets, API-only routing, signup allowlist and a CodeBuild container smoke check. Production is unchanged.
