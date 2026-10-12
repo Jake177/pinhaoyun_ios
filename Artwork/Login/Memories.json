@@ -1,0 +1,13 @@
+{
+  "tool": "image_gen.imagegen",
+  "origin": "exec-39104946-2e93-4833-a30c-c20497acf6ef.png",
+  "promptFile": "Memories.prompt.txt",
+  "reference": "B-left-aligned.png",
+  "role": "Decorative synthetic photo-print stack for the approved sign-in composition",
+  "background": "native alpha transparency; white print borders preserved",
+  "exports": {
+    "master": "Memories.png",
+    "asset": "../../App/Resources/Assets.xcassets/LoginMemories.imageset/memories.png",
+    "processing": "trim transparent margins at threshold 1, scale down to 1200px width, lossless PNG"
+  }
+}

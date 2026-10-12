@@ -8,6 +8,9 @@ xcuserdata/
 !.env.example
 Config/Local.xcconfig
 .impeccable/review/
+.impeccable/build/
+.impeccable/questions/
+.impeccable/mocks/
 infra/artifacts/
 infra/outputs.local.json
 
