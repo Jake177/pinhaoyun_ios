@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-08T23:48:11.650618+00:00",
+  "generatedAt": "2026-10-12T03:24:58.624353+00:00",
   "title": "Design System: PinHaoYun iOS",
   "extensions": {
     "colorMeta": {
@@ -21,6 +21,11 @@
         "purpose": "Authentication brand name.",
         "nativeTextStyle": ".title.bold()"
       },
+      "large-title-bold": {
+        "displayName": "Large Title Bold",
+        "purpose": "Leading-aligned sign-in headline.",
+        "nativeTextStyle": ".largeTitle.bold()"
+      },
       "title2": {
         "displayName": "Title 2",
         "purpose": "Placeholder symbols and deletion-receipt status.",
@@ -38,7 +43,7 @@
       },
       "subheadline": {
         "displayName": "Subheadline",
-        "purpose": "Account email and storage summary.",
+        "purpose": "Account email and storage summary; sign-in description, error and success feedback.",
         "nativeTextStyle": ".subheadline"
       },
       "body": {
@@ -48,12 +53,12 @@
       },
       "footnote": {
         "displayName": "Footnote",
-        "purpose": "Supporting notes, transfer errors and recovery notices.",
+        "purpose": "Supporting notes, transfer errors, recovery notices and sign-in policy links.",
         "nativeTextStyle": ".footnote"
       },
       "caption": {
         "displayName": "Caption",
-        "purpose": "Transfer state and completed-byte counter, with monospacedDigit() for bytes.",
+        "purpose": "Transfer state and completed-byte counter, with monospacedDigit() for bytes; sign-in accessibility-size field labels and beta note.",
         "nativeTextStyle": ".caption"
       },
       "media-badge": {
@@ -83,7 +88,10 @@
         "Artwork/AppIcon.svg",
         "App/Services/APIClient.swift",
         "App/Services/TransferManager.swift",
-        "App/Models/TransferRecord.swift"
+        "App/Models/TransferRecord.swift",
+        "Artwork/Login/Memories.json",
+        "Artwork/Login/Memories.prompt.txt",
+        "App/Resources/Assets.xcassets/LoginMemories.imageset/Contents.json"
       ],
       "semanticColors": [
         {
@@ -127,6 +135,24 @@
           "value": ".secondary",
           "source": "App/Views",
           "usage": "Supporting text, metadata and fallback symbols."
+        },
+        {
+          "name": "auth-page-ground",
+          "value": "Color(uiColor: .systemGroupedBackground)",
+          "source": "App/Views/AuthView.swift",
+          "usage": "Sign-in page background; only the background ignores safe areas."
+        },
+        {
+          "name": "auth-field-group",
+          "value": "Color(uiColor: .secondarySystemGroupedBackground)",
+          "source": "App/Views/AuthView.swift",
+          "usage": "Grouped email/password container on sign-in."
+        },
+        {
+          "name": "auth-supporting",
+          "value": "Color.primary.opacity(0.7)",
+          "source": "App/Views/AuthView.swift",
+          "usage": "Sign-in description, success feedback and beta note; shared authentication field prompts. Adaptive primary color with opacity, without a fixed gray substitute."
         }
       ],
       "materials": [
@@ -141,6 +167,12 @@
           "value": ".regularMaterial",
           "source": "App/Views/MediaDetailView.swift",
           "usage": "Success/recovery notices in bottom safe-area inset."
+        },
+        {
+          "name": "auth-substep-action-bar",
+          "value": ".bar",
+          "source": "App/Views/AuthView.swift",
+          "usage": "Bottom safe-area primary-action bar on registration, verification and reset substeps."
         }
       ],
       "layout": {
@@ -187,7 +219,76 @@
           "Button/field corner geometry",
           "Text-style sizes and line heights"
         ],
-        "responsiveStrategy": "Available-width adaptive media columns; no authored breakpoints or bespoke tablet split layout."
+        "responsiveStrategy": "Available-width adaptive media columns; no authored breakpoints or bespoke tablet split layout.",
+        "signIn": {
+          "source": "App/Views/AuthView.swift",
+          "nativeAPI": "GeometryReader → ScrollView → VStack(alignment: .leading, spacing: 0)",
+          "pageHorizontalPaddingRef": "spacing.auth-page-inset",
+          "pageVerticalPaddingRef": "spacing.auth-content-padding",
+          "minimumContentHeight": "geometry.size.height",
+          "navigationBar": "Hidden on sign-in; substeps show native navigation with inline titles.",
+          "decorativePrints": {
+            "asset": "LoginMemories",
+            "fit": "resizable + scaledToFit; centered at maxWidth: .infinity",
+            "height": "min(216, geometry.size.height * 0.28)",
+            "visibleWhen": "focus == nil && !dynamicTypeSize.isAccessibilitySize && geometry.size.height > 400",
+            "accessibility": "accessibilityHidden(true)"
+          },
+          "introduction": {
+            "stackSpacingPt": 16,
+            "bottomPaddingRef": "spacing.auth-page-inset",
+            "headlineDescriptionSpacingRef": "spacing.content-gap",
+            "headlineVisibleWhen": "focus == nil",
+            "headlineTextStyleRef": "typography.large-title-bold",
+            "headlineAlignment": "leading; fixedSize(horizontal: false, vertical: true); isHeader trait"
+          },
+          "brand": {
+            "markSizeRef": "components.brand-mark",
+            "markFit": "resizable + scaledToFit; accessibilityHidden(true)",
+            "textStyleRef": "typography.brand-title",
+            "ordinaryLayout": "Centered HStack(spacing: 12)",
+            "ordinarySpacingRef": "spacing.stack-gap",
+            "accessibilityLayout": "VStack(spacing: 8); centered full-width brand name",
+            "accessibilitySpacingRef": "spacing.content-gap",
+            "textSizing": "fixedSize(horizontal: false, vertical: true); full system Dynamic Type without shrinking or a size cap"
+          },
+          "credentialGroup": {
+            "backgroundSemanticColor": "auth-field-group",
+            "shape": "RoundedRectangle(cornerRadius: 20)",
+            "roundedRef": "rounded.auth-fields",
+            "horizontalPaddingRef": "spacing.auth-content-padding",
+            "ordinaryLayout": "Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 0), with a Divider across both columns",
+            "ordinaryColumnSpacingPt": 16,
+            "ordinaryMinimumFieldHeightPt": 52,
+            "accessibilityLayout": "Leading labels above native fields in vertical stacks, separated by a Divider",
+            "accessibilityLabelTextStyleRef": "typography.caption",
+            "accessibilityLabelFieldSpacingPt": 4,
+            "accessibilityMinimumFieldHeightPt": 44,
+            "accessibilityRowVerticalPaddingRef": "spacing.stack-gap",
+            "labels": "Visible labels accessibilityHidden(true); fields carry explicit Email/Password accessibility labels."
+          },
+          "actions": {
+            "stackSpacingRef": "spacing.stack-gap",
+            "primaryButtonStyle": ".borderedProminent + .controlSize(.large) + .buttonBorderShape(.capsule)",
+            "primaryLabelMinimumHeightPt": 32,
+            "primaryPlacement": "Inside scroll content; title and busy ProgressView centered between spacers.",
+            "secondaryLayout": "ViewThatFits(in: .horizontal): HStack(spacing: 16) with Spacer(minLength: 16), or leading VStack(spacing: 0)",
+            "secondaryRowSpacingPt": 16,
+            "secondarySpacerMinimumPt": 16,
+            "auxiliaryMinimumHeightPt": 44,
+            "receiptRecovery": "Check account deletion remains conditional on hasSavedDeletionReceipt."
+          },
+          "footer": {
+            "spacerMinimumPt": 16,
+            "policyLayout": "ViewThatFits(in: .horizontal): HStack(spacing: 12), or VStack(spacing: 0)",
+            "policyRowSpacingRef": "spacing.stack-gap",
+            "policyActionMinimumHeightPt": 44,
+            "loadingVerticalPaddingRef": "spacing.stack-gap",
+            "betaNoteTextStyleRef": "typography.caption",
+            "betaNoteAlignment": "center; fixedSize(horizontal: false, vertical: true)"
+          },
+          "keyboard": "Interactive scroll dismissal, field-focus progression, and native keyboard Done action."
+        }
       },
       "components": [
         {
@@ -209,18 +310,29 @@
         {
           "name": "Form Action",
           "kind": "button",
-          "description": "System-prominent authentication or consent action, separate from secondary navigation.",
+          "description": "System-prominent authentication or consent action, separate from secondary navigation; sign-in is large and capsule-shaped inside scroll content.",
           "swiftUI": "Button { submit(screen) } label: { /* title and busy progress */ }.buttonStyle(.borderedProminent)",
           "source": "App/Views/AuthView.swift",
-          "states": "Invalid/busy disables submission. Native back is hidden during submission; keyboard focus and Done are supported."
+          "states": "Invalid/busy disables submission. Sign-in keeps its title and centered busy progress; authentication substeps retain a safe-area action bar, native back behavior, focus progression and keyboard Done."
         },
         {
           "name": "Email Field",
           "kind": "input",
-          "description": "Native form TextField with email-specific input behavior.",
-          "swiftUI": "TextField(\"Email\", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()",
+          "description": "Native TextField with email-specific input behavior; grouped on sign-in, in native Form sections on substeps.",
+          "swiftUI": "TextField(screen == .signIn ? \"name@example.com\" : String(localized: \"Email\"), text: $email, prompt: Text(screen == .signIn ? \"name@example.com\" : String(localized: \"Email\")).foregroundStyle(Color.primary.opacity(0.7))).textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()",
           "source": "App/Views/AuthView.swift",
-          "states": "Email keyboard, content type, next/send actions, explicit focus and inline validation after editing."
+          "states": "Email keyboard, content type, next/send actions, explicit Email accessibility label, focus and inline validation after editing; adaptive primary-opacity prompt."
+        },
+        {
+          "name": "Sign-in Composition",
+          "kind": "custom",
+          "source": "App/Views/AuthView.swift",
+          "layoutRef": "extensions.native.layout.signIn",
+          "description": "User-approved B composition: decorative photo prints, centered brand, leading headline and live native sign-in controls.",
+          "swiftUI": "GeometryReader { geometry in ScrollView { VStack(alignment: .leading, spacing: 0) { /* adaptive introduction, credentials, actions and policies */ } } }",
+          "states": "Focus removes artwork and headline/description; accessibility sizes remove artwork, stack the brand vertically and place labels above fields. ViewThatFits stacks secondary/policy actions when width is constrained. Busy disables fields/actions; errors and success feedback remain readable.",
+          "error": "Inline invalid-email footnote and red submission-error subheadline Label; signInErrorFocused binds accessibility focus when a sign-in error appears.",
+          "navigation": "Native NavigationStack path, registration/reset links, policy sheets, conditional saved-receipt recovery and native keyboard toolbar."
         },
         {
           "name": "Root Tab Navigation",
@@ -243,7 +355,7 @@
         {
           "name": "Native Form Sections",
           "kind": "custom",
-          "description": "System sections for account, authentication, consent, deletion and media information.",
+          "description": "System sections for account, authentication substeps, consent, deletion and media information; sign-in has a scoped grouped credential container.",
           "swiftUI": "Form { Section { /* native fields, labels and actions */ } }",
           "source": "App/Views/AuthView.swift; App/Views/AccountView.swift; App/Views/PolicyViews.swift; App/Views/MediaDetailView.swift",
           "states": "OS-owned background, insets and corners. Account data and policy loading recover independently; Consent policy loading/retry appears in native sections. No custom card primitive."
@@ -318,11 +430,34 @@
             1024
           ],
           "provenance": "Hand-authored SVG reconstruction of the user-selected 2026-10-12 single-piece concept; generation prompts and reference retained under Artwork/Concepts/2026-10-12.",
-          "usage": "Transparent sign-in mark; adaptive light/dark colors, 48 × 48 pt, scaledToFit, accessibilityHidden(true).",
+          "usage": "Transparent sign-in mark; adaptive light/dark colors, 56 × 56 pt (components.brand-mark), scaledToFit, accessibilityHidden(true); horizontal brand row normally, vertical brand stack at accessibility sizes.",
           "variants": [
             "default",
             "dark"
           ]
+        },
+        {
+          "name": "LoginMemories",
+          "path": "App/Resources/Assets.xcassets/LoginMemories.imageset/memories.png",
+          "source": "Artwork/Login/Memories.png",
+          "provenanceFile": "Artwork/Login/Memories.json",
+          "promptFile": "Artwork/Login/Memories.prompt.txt",
+          "reference": "Artwork/Login/B-left-aligned.png",
+          "referenceProvenance": "Artwork/Login/B-left-aligned.json",
+          "tool": "image_gen.imagegen",
+          "origin": "exec-39104946-2e93-4833-a30c-c20497acf6ef.png",
+          "sizePx": [
+            1200,
+            782
+          ],
+          "masterSizePx": [
+            1536,
+            1024
+          ],
+          "provenance": "Transparent decorative synthetic photo-print stack regenerated from the user-approved 2026-10-12 B left-aligned concept. Café left, mountain lake in front, coastal path right; no controls or user-library content rasterized.",
+          "processing": "Trim transparent margins at threshold 1, scale down to 1200 px width, lossless PNG.",
+          "background": "Real alpha transparency with opaque white print borders and translucent raster shadows.",
+          "usage": "One original-rendering asset for light/dark sign-in; scaledToFit with adaptive height, hidden during field focus and at accessibility Dynamic Type sizes, accessibilityHidden(true)."
         }
       ],
       "localization": {

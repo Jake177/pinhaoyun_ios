@@ -331,6 +331,36 @@
         }
       }
     },
+    "Your memories,\nwell kept.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "把回忆，\n好好收藏。"
+          }
+        }
+      }
+    },
+    "Photos, videos and Live Photos, together.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "照片、视频与 Live Photo，都在一起。"
+          }
+        }
+      }
+    },
+    "Enter password": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入密码"
+          }
+        }
+      }
+    },
     "Use at least 8 characters with uppercase, lowercase, a number and a symbol.": {
       "localizations": {
         "zh-Hans": {

@@ -8,6 +8,9 @@ typography:
   brand-title:
     fontFamily: "system-ui"
     fontWeight: 700
+  large-title-bold:
+    fontFamily: "system-ui"
+    fontWeight: 700
   title2:
     fontFamily: "system-ui"
   title2-bold:
@@ -28,14 +31,16 @@ typography:
     fontWeight: 700
 rounded:
   media-cell: "0pt"
+  auth-fields: "20pt"
 spacing:
   grid-gap: "3pt"
   media-badge-padding: "5pt"
   transfer-row-padding: "6pt"
   content-gap: "8pt"
   stack-gap: "12pt"
-  brand-vertical-padding: "8pt"
   section-gap: "20pt"
+  auth-page-inset: "24pt"
+  auth-content-padding: "16pt"
 components:
   media-badge:
     backgroundColor: "{colors.media-badge-scrim}"
@@ -50,8 +55,10 @@ components:
   transfer-title:
     typography: "{typography.headline}"
   brand-mark:
-    width: "48pt"
-    height: "48pt"
+    width: "56pt"
+    height: "56pt"
+  auth-fields:
+    rounded: "{rounded.auth-fields}"
 ---
 
 # Design System: PinHaoYun iOS
@@ -87,7 +94,9 @@ The UI uses an adaptive iOS palette rather than a custom light/dark hex palette.
 
 - **System Background** (`Color(uiColor: .systemBackground)` and `.background`): original-media ground and opaque date-heading ground.
 - **Secondary System Background** (`Color(uiColor: .secondarySystemBackground)`): square thumbnail placeholders.
+- **System Grouped / Secondary System Grouped Background** (`Color(uiColor: .systemGroupedBackground)` / `Color(uiColor: .secondarySystemGroupedBackground)`): sign-in page ground and its email/password field group. These retain native light/dark resolution.
 - **Primary / Secondary Foreground** (native default / `.secondary`): primary content and supporting copy. The OS resolves actual appearance.
+- **Authentication Supporting Foreground** (`Color.primary.opacity(0.7)`): sign-in description, success feedback and beta note, plus shared authentication field prompts. This is an opacity applied to the adaptive primary color, not a new fixed gray.
 - **Media Badge White / Scrim** (`colors.media-badge-text` / `colors.media-badge-scrim`): readable status over imagery; not general page-background colors.
 - **System Bar / Regular Material** (`.bar` / `.regularMaterial`): safe-area explanations and media-detail notices. These are materials, not opaque swatches.
 
@@ -104,14 +113,15 @@ The UI uses an adaptive iOS palette rather than a custom light/dark hex palette.
 | Token / native style | Observed use |
 | --- | --- |
 | `brand-title` / `.title.bold()` | Authentication brand name. |
+| `large-title-bold` / `.largeTitle.bold()` | Leading-aligned sign-in headline. |
 | Native navigation title | Root Library, Transfers and Account use the default large-title behavior; detail, account deletion, policy and media information explicitly use inline titles. |
 | `title2` / `.title2` | Placeholder symbols and deletion-receipt status. |
 | `title2-bold` / `.title2.bold()` | Consent and account-deletion introductions. |
 | `headline` / `.headline` | Date headings, transfer filenames and account identity. |
-| `subheadline` / `.subheadline` | Account email and storage summary. |
+| `subheadline` / `.subheadline` | Account email and storage summary; sign-in description, error and success feedback. |
 | `body` / `.body` or native default | Forms, explanations, policy reading and ordinary actions. |
-| `footnote` / `.footnote` | Supporting notes, transfer errors and recovery notices. |
-| `caption` / `.caption` | Transfer state and completed-byte counter; the counter also uses `.monospacedDigit()`. |
+| `footnote` / `.footnote` | Supporting notes, transfer errors, recovery notices and sign-in policy links. |
+| `caption` / `.caption` | Transfer state and completed-byte counter; the counter also uses `.monospacedDigit()`. Sign-in uses caption for accessibility-size field labels and the beta note. |
 | `media-badge` / `.caption2.bold()` | Live Photo marker and video duration. |
 
 **The System Type Rule.** Keep semantic text styles so Dynamic Type can resize them; do not convert this table into fixed point-size constants. Transfer filenames allow two lines at ordinary sizes and unrestricted wrapping at accessibility sizes. State and byte counts can stack vertically when width is constrained.
@@ -125,8 +135,8 @@ Root sections use `TabView`, each with its own `NavigationStack`. Hierarchy uses
 - **Grid:** adaptive `LazyVGrid`, minimum cell width 110 pt, `grid-gap` between rows and columns. Cells are square, thumbnails fill and clip. Column count follows available width; no authored breakpoints exist.
 - **Chronology:** day sections use `section-gap` in a leading-aligned `LazyVStack` with pinned headers. Headings use `content-gap` vertically and `stack-gap` horizontally, full width with semantic background.
 - **Transfers:** native `List` rows use leading stacks with `content-gap` and `transfer-row-padding` vertically. State and uploaded/total bytes share a row or stack at constrained widths. In-progress and history sections remain separate; completed rows use compact padding.
-- **Forms:** authentication, account, consent, deletion and metadata use native `Form` sections, without a bespoke card layout.
-- **Brand introduction:** `brand-mark` size, `stack-gap`, `brand-vertical-padding` and a clear form-row background.
+- **Forms:** authentication substeps, account, consent, deletion and metadata use native `Form` sections, without a bespoke card layout.
+- **Sign-in:** a leading `VStack` in a `ScrollView`, with `auth-page-inset` horizontally and `auth-content-padding` vertically, fills at least the available height. The decorative print stack, centered brand, leading headline/description, credential group, prominent action, secondary actions and policy footer form one scrollable surface. The brand uses `brand-mark` size and `stack-gap` normally; accessibility sizes place the mark above the full-width name with `content-gap`. Adaptive geometry and focus-dependent visibility are recorded in the native sidecar.
 - **Touch:** The Library add action has an explicit 44 × 44 pt frame; the filter uses a visible icon-and-title label with at least 44 pt height. Other controls rely on native controls; effective targets require runtime verification.
 - **Detail:** only the background extends outside safe areas. Controls occupy native bars and safe-area insets. Originals fit without cropping; root tabs are hidden.
 
@@ -135,6 +145,8 @@ The interface is iPhone-first. Its adaptive grid does not establish a custom tab
 ## Elevation & Depth
 
 There are no authored shadows, gradients or custom blur layers. Native grouped sections, image contrast, pinned heading backgrounds and system materials provide separation. Transfer explanations live in a native DisclosureGroup; detail progress, success and recovery notices use `.regularMaterial`. Bars, sheets, dialogs and standard controls retain platform treatment.
+
+The sign-in illustration includes translucent shadows within its raster artwork. They belong to that decorative print stack and do not introduce a UI shadow token or component elevation style.
 
 **The Native Material Rule.** Use the existing system material for notices and bars; do not turn those components into custom floating cards or hand-built glass.
 
@@ -146,6 +158,8 @@ Media thumbnails are square with clipped contents and no added corner radius or 
 
 System button styles, form sections, fields, menus, pickers, dialogs and sheets own their shapes. No custom card family, border-width scale or corner-radius scale exists. The opaque cloud-and-puzzle artwork is an identity asset; its navy/white artwork is not a second UI palette.
 
+Sign-in alone gives the grouped credential container an authored `RoundedRectangle` using `rounded.auth-fields`. Its large prominent button uses the native `.capsule` button border shape; the system owns that button's rendered corners.
+
 ## Components
 
 ### Buttons
@@ -154,11 +168,23 @@ Use the implemented platform hierarchy: `.borderedProminent` for authentication,
 
 Busy form actions keep their title and show a trailing `ProgressView` after a spacer. Authentication/consent submission and sign-out disable while busy. Authentication substeps use a local NavigationStack path, system back controls, compact task titles, screen-scoped focus progression and a keyboard Done action. Long-form primary actions occupy a bottom safe-area bar. Save/export controls disable during loading or saving.
 
+Sign-in keeps its primary action inside the scroll content, using `.borderedProminent`, `.controlSize(.large)` and `.buttonBorderShape(.capsule)`. Its title and busy indicator share a centered row; registration/reset remain native navigation links. Substep actions retain the bottom safe-area bar.
+
 Password reset has three separate tasks: email, reset code and a new password entered twice. Continue requires six digits and does not claim server verification; final save uses Cognito's combined verification/password operation. Password mismatch has inline text and prevents save. Code errors return to the code screen with a readable message; typed secrets remain in view memory and are cleared when leaving the flow.
 
 ### Inputs / Fields
 
 Native `TextField`, `SecureField`, `Toggle` and `Picker` appear in forms. Email uses an email keyboard/content type, without automatic capitalization or autocorrection. Password and code fields use matching content types; codes use the number pad. Errors are visible text or labels in separate sections. No custom field border, focus glow or radius is authored.
+
+### Sign-in
+
+The approved B composition combines synthetic photo prints with live native controls. `LoginMemories` is scaled to fit, centered and accessibility-hidden. Its height is the smaller of 216 pt and 28% of available height; it appears only with no field focused, ordinary Dynamic Type and more than 400 pt of available height. Field focus also hides the headline/description, preserving the brand and prioritizing scrollable input/actions. The title stays `.title.bold()` without shrinking or a Dynamic Type cap; accessibility sizes stack the mark above the name so the name receives the full content width.
+
+The email/password container uses the secondary grouped surface, `auth-content-padding` horizontally, `rounded.auth-fields`, and a native divider. Ordinary sizes use a leading `Grid` with 16 pt column spacing and 52 pt minimum field height. Accessibility sizes use caption labels above native fields, a 4 pt label-to-field gap, 44 pt minimum field height and `stack-gap` vertical padding. Labels are hidden from accessibility because the fields have explicit Email/Password labels. Inline email validation uses footnote red text; submission errors use a red subheadline label with an accessibility-focus binding. Success feedback uses the authentication supporting foreground.
+
+The introduction has 16 pt stack spacing, `auth-page-inset` below it, and `content-gap` between headline and description. The action stack uses `stack-gap`; a spacer of at least 16 pt separates it from the footer. Registration/reset and terms/privacy switch from horizontal rows to vertical stacks with `ViewThatFits`. Those links, conditional receipt recovery and policy reload have at least 44 pt authored heights. Policies retain native sheets and loading/retry states; the caption beta note remains readable at the footer. The sign-in navigation bar is hidden, while registration, verification and reset retain native pushes and inline task titles.
+
+`Artwork/Login/Memories.png` is the transparent 1536 × 1024 imagegen master, regenerated from the approved `Artwork/Login/B-left-aligned.png` composition. `Artwork/Login/Memories.json` and `Memories.prompt.txt` retain tool origin, prompt, reference and export rules. The shipping `LoginMemories.imageset/memories.png` is a trimmed 1200 × 782 lossless PNG with real alpha and opaque white print borders; one original-rendering asset serves light and dark appearances. The café, mountain-lake and coastal-path images are decorative synthetic memories, not user-library content or baked-in interface controls. The approved comp and its prompt/provenance remain under `Artwork/Login/`.
 
 ### Navigation
 
@@ -166,7 +192,7 @@ The system tab bar uses Library (`photo.on.rectangle`), Transfers (`arrow.up.arr
 
 ### Native Sections and Notices
 
-Account/authentication content uses `Form` sections; transfers and deletion receipts use `List`. There is no custom card primitive. Explanatory bars use `safeAreaInset` and system material, with no invented fixed height.
+Account and authentication substep content use `Form` sections; sign-in uses the scoped credential group described above. Transfers and deletion receipts use `List`. There is no custom card primitive. Explanatory bars use `safeAreaInset` and system material, with no invented fixed height.
 
 ### Media Cell and Badge
 

@@ -4,6 +4,7 @@ struct AuthView: View {
     enum Mode: Hashable { case signIn, signUp, verify, reset, resetCode, resetConfirm }
     private enum Field: Hashable { case email(Mode), password(Mode), code(Mode), confirmation, nickname, givenName, familyName }
     @Environment(APIClient.self) private var api
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var path: [Mode] = []
     @State private var email = ""
     @State private var password = ""
@@ -28,12 +29,13 @@ struct AuthView: View {
     @State private var resetCodeError: String?
     @State private var resendAfter = Date.distantPast
     @FocusState private var focus: Field?
+    @AccessibilityFocusState private var signInErrorFocused: Bool
     private var mode: Mode { path.last ?? .signIn }
     private var normalizedEmail: String { email.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         NavigationStack(path: $path) {
-            form(.signIn)
+            signIn
                 .navigationDestination(for: Mode.self) { form($0) }
         }
         .sheet(item: $legal) { PolicyTextView(sheet: $0) }
@@ -50,21 +52,181 @@ struct AuthView: View {
             if case .password(_)? = old { editedPassword = true }
             if old == .confirmation { editedConfirmation = true }
         }
+        .onChange(of: error) { _, message in
+            if message != nil && mode == .signIn { signInErrorFocused = true }
+        }
+    }
+
+    private var signIn: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(spacing: 16) {
+                        if focus == nil && !dynamicTypeSize.isAccessibilitySize && geometry.size.height > 400 {
+                            Image("LoginMemories").resizable().scaledToFit()
+                                .frame(height: min(216, geometry.size.height * 0.28))
+                                .frame(maxWidth: .infinity).accessibilityHidden(true)
+                        }
+                        signInBrand
+                        if focus == nil {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Your memories,\nwell kept.").font(.largeTitle.bold())
+                                    .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                                Text("Photos, videos and Live Photos, together.").font(.subheadline).foregroundStyle(Color.primary.opacity(0.7))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }.padding(.bottom, 24)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        signInFields
+                        if let error {
+                            Label(error, systemImage: "exclamationmark.circle").font(.subheadline).foregroundStyle(.red)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("auth.error").accessibilityFocused($signInErrorFocused)
+                        }
+                        if let feedback, feedback.mode == .signIn {
+                            Text(feedback.text).font(.subheadline).foregroundStyle(Color.primary.opacity(0.7))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        primaryButton(.signIn).controlSize(.large).buttonBorderShape(.capsule)
+                        signInSecondaryActions
+                        if api.hasSavedDeletionReceipt {
+                            Button("Check account deletion") { api.restoreReceipt() }.frame(minHeight: 44).disabled(busy)
+                        }
+                    }
+                    Spacer(minLength: 16)
+                    signInPolicies
+                }
+                .padding(.horizontal, 24).padding(.vertical, 16)
+                .frame(minHeight: geometry.size.height, alignment: .top)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focus = nil } } }
+    }
+
+    private var signInBrand: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 8) { brandMark; brandName.multilineTextAlignment(.center).frame(maxWidth: .infinity) }
+            } else {
+                HStack(spacing: 12) { brandMark; brandName }
+            }
+        }.frame(maxWidth: .infinity)
+    }
+    private var brandMark: some View {
+        Image("BrandMark").resizable().scaledToFit().frame(width: 56, height: 56).accessibilityHidden(true)
+    }
+    private var brandName: some View {
+        Text("PinHaoYun").font(.title.bold()).fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var signInFields: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Email").font(.caption).accessibilityHidden(true)
+                    emailInput(.signIn).frame(minHeight: 44)
+                }.padding(.vertical, 12)
+                signInEmailError
+                Divider()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Password").font(.caption).accessibilityHidden(true)
+                    passwordInput(.signIn).frame(minHeight: 44)
+                }.padding(.vertical, 12)
+            } else {
+                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 0) {
+                    GridRow {
+                        Text("Email").accessibilityHidden(true)
+                        emailInput(.signIn).frame(minHeight: 52)
+                    }
+                    signInEmailError.gridCellColumns(2)
+                    Divider().gridCellColumns(2).gridCellUnsizedAxes(.horizontal)
+                    GridRow {
+                        Text("Password").accessibilityHidden(true)
+                        passwordInput(.signIn).frame(minHeight: 52)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+        .disabled(busy)
+    }
+    @ViewBuilder private var signInEmailError: some View {
+        if editedEmail && !email.isEmpty && !AuthInput.validEmail(normalizedEmail) {
+            Text("Enter a valid email address.").font(.footnote).foregroundStyle(.red).padding(.bottom, 12)
+        }
+    }
+    private var signInSecondaryActions: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) {
+                registrationLink.fixedSize()
+                Spacer(minLength: 16)
+                resetLink.fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 0) { registrationLink; resetLink }
+        }.disabled(busy)
+    }
+    private var registrationLink: some View {
+        NavigationLink("Create an account", value: Mode.signUp).frame(minHeight: 44).accessibilityIdentifier("auth.signUp")
+    }
+    private var resetLink: some View {
+        NavigationLink("Forgot password?", value: Mode.reset).frame(minHeight: 44).accessibilityIdentifier("auth.reset")
+    }
+    private var signInPolicies: some View {
+        VStack(spacing: 0) {
+            if let policy {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) { termsLink(policy).fixedSize(); privacyLink(policy).fixedSize() }
+                    VStack(spacing: 0) { termsLink(policy); privacyLink(policy) }
+                }
+            } else if loadingPolicy {
+                ProgressView("Loading terms and privacy notice").font(.footnote).padding(.vertical, 12)
+            }
+            if let policyError {
+                Text(policyError).font(.footnote).foregroundStyle(.red)
+                Button("Reload terms and privacy notice") { Task { await loadPolicies() } }.frame(minHeight: 44).disabled(loadingPolicy)
+            }
+            Text("Invited beta · Keep an independent copy of important originals.").font(.caption).foregroundStyle(Color.primary.opacity(0.7))
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: .infinity)
+    }
+    private func termsLink(_ document: PolicyDocument) -> some View {
+        Button("Terms of use") { legal = PolicySheet(kind: .terms, document: document) }
+            .font(.footnote).frame(minHeight: 44).accessibilityIdentifier("auth.terms")
+    }
+    private func privacyLink(_ document: PolicyDocument) -> some View {
+        Button("Privacy notice") { legal = PolicySheet(kind: .privacy, document: document) }
+            .font(.footnote).frame(minHeight: 44).accessibilityIdentifier("auth.privacy")
+    }
+    private func emailInput(_ screen: Mode) -> some View {
+        TextField(screen == .signIn ? "name@example.com" : String(localized: "Email"), text: $email,
+                  prompt: Text(screen == .signIn ? "name@example.com" : String(localized: "Email")).foregroundStyle(Color.primary.opacity(0.7)))
+            .textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+            .focused($focus, equals: .email(screen)).submitLabel(screen == .reset ? .send : .next)
+            .onSubmit { if screen == .reset { submitIfReady(screen) } else { focus = .password(screen) } }
+            .accessibilityLabel(Text("Email")).accessibilityIdentifier("auth.email")
+    }
+    private func passwordInput(_ screen: Mode) -> some View {
+        let placeholder = screen == .resetConfirm ? String(localized: "New password") : screen == .signIn ? String(localized: "Enter password") : String(localized: "Password")
+        return SecureField(placeholder, text: $password, prompt: Text(placeholder).foregroundStyle(Color.primary.opacity(0.7)))
+            .textContentType(screen == .signIn ? .password : .newPassword).focused($focus, equals: .password(screen))
+            .submitLabel(screen == .signUp || screen == .resetConfirm ? .next : .go)
+            .onSubmit {
+                if screen == .signUp { focus = .nickname }
+                else if screen == .resetConfirm { focus = .confirmation }
+                else { submitIfReady(screen) }
+            }
+            .accessibilityLabel(Text(screen == .resetConfirm ? String(localized: "New password") : String(localized: "Password")))
+            .accessibilityIdentifier("auth.password")
     }
 
     private func form(_ screen: Mode) -> some View {
         Form {
-            if screen == .signIn {
-                Section {
-                    HStack(alignment: .center, spacing: 12) {
-                        Image("BrandMark").resizable().scaledToFit().frame(width: 48, height: 48).accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("PinHaoYun").font(.title.bold())
-                            Text("Your photos and videos, together.").font(.subheadline).foregroundStyle(.secondary)
-                        }
-                    }.padding(.vertical, 8)
-                }.listRowBackground(Color.clear)
-            }
             if screen == .verify || screen == .resetCode {
                 Section {
                     Text("A verification code was sent to")
@@ -73,26 +235,15 @@ struct AuthView: View {
                 }
             }
             Section {
-                if screen == .signIn || screen == .signUp || screen == .reset {
-                    TextField("Email", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled().focused($focus, equals: .email(screen))
-                        .submitLabel(screen == .reset ? .send : .next)
-                        .onSubmit { if screen == .reset { submitIfReady(screen) } else { focus = .password(screen) } }
-                        .accessibilityIdentifier("auth.email")
+                if screen == .signUp || screen == .reset {
+                    emailInput(screen)
                     if editedEmail && !email.isEmpty && !AuthInput.validEmail(normalizedEmail) {
                         Text("Enter a valid email address.").font(.footnote).foregroundStyle(.red)
                     }
                 }
-                if screen == .signIn || screen == .signUp || screen == .resetConfirm {
-                    SecureField(screen == .resetConfirm ? String(localized: "New password") : String(localized: "Password"), text: $password)
-                        .textContentType(screen == .signIn ? .password : .newPassword).focused($focus, equals: .password(screen))
-                        .submitLabel(screen == .signUp ? .next : screen == .resetConfirm ? .next : .go)
-                        .onSubmit {
-                            if screen == .signUp { focus = .nickname }
-                            else if screen == .resetConfirm { focus = .confirmation }
-                            else { submitIfReady(screen) }
-                        }.accessibilityIdentifier("auth.password")
-                    if screen != .signIn && editedPassword && !password.isEmpty && !AuthInput.validNewPassword(password) {
+                if screen == .signUp || screen == .resetConfirm {
+                    passwordInput(screen)
+                    if editedPassword && !password.isEmpty && !AuthInput.validNewPassword(password) {
                         Text("Your password does not meet the requirements below.").font(.footnote).foregroundStyle(.red)
                     }
                 }
@@ -146,11 +297,6 @@ struct AuthView: View {
             }
             if let error { Section { Label(error, systemImage: "exclamationmark.circle").foregroundStyle(.red).accessibilityIdentifier("auth.error") } }
             if let feedback, feedback.mode == screen { Section { Text(feedback.text).foregroundStyle(.secondary) } }
-            if screen == .signIn {
-                Section {
-                    primaryButton(screen).listRowBackground(Color.clear).listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                }
-            }
             if screen == .verify || screen == .resetCode {
                 Section {
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
@@ -162,18 +308,9 @@ struct AuthView: View {
                     }
                 }
             }
-            if screen == .signIn {
-                Section {
-                    NavigationLink("Create an account", value: Mode.signUp)
-                    NavigationLink("Forgot password?", value: Mode.reset)
-                    if api.hasSavedDeletionReceipt { Button("Check account deletion") { api.restoreReceipt() } }
-                }.disabled(busy)
-                Section { policyLinks
-                    Text("Invited beta · Keep an independent copy of important originals.").font(.footnote).foregroundStyle(.secondary)
-                }
-            }
         }
         .navigationTitle(title(screen)).navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .navigationBarBackButtonHidden(busy && screen != .signIn)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if screen != .signIn { primaryButton(screen).padding(.horizontal).padding(.vertical, 8).background(.bar) }
