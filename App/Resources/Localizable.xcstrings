@@ -1900,6 +1900,736 @@
           }
         }
       }
+    },
+    "Automatic backup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动备份"
+          }
+        }
+      }
+    },
+    "Automatic backup is off": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动备份已关闭"
+          }
+        }
+      }
+    },
+    "Backup content": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备份内容"
+          }
+        }
+      }
+    },
+    "Photos to back up": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备份范围"
+          }
+        }
+      }
+    },
+    "Only new photos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅新增照片"
+          }
+        }
+      }
+    },
+    "All accessible photos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部可访问照片"
+          }
+        }
+      }
+    },
+    "Include videos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含视频"
+          }
+        }
+      }
+    },
+    "Network": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络"
+          }
+        }
+      }
+    },
+    "Allow cellular data": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许蜂窝网络"
+          }
+        }
+      }
+    },
+    "Backup time": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备份时间"
+          }
+        }
+      }
+    },
+    "Use a daily time window": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置每日备份时段"
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始时间"
+          }
+        }
+      }
+    },
+    "End": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束时间"
+          }
+        }
+      }
+    },
+    "Choose different start and end times.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始和结束时间不能相同。"
+          }
+        }
+      }
+    },
+    "Uses your current local time, including travel and daylight saving. Started items may finish after the window ends.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随手机当地时间，包含旅行换时区及夏令时。已开始的项目可能在时段结束后完成。"
+          }
+        }
+      }
+    },
+    "Photos access": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相册权限"
+          }
+        }
+      }
+    },
+    "Only your selected photos are accessible.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只能访问你授权选择的照片。"
+          }
+        }
+      }
+    },
+    "Photos access is available.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已获得相册访问权限。"
+          }
+        }
+      }
+    },
+    "Manage selected photos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理已授权照片"
+          }
+        }
+      }
+    },
+    "Check for new photos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查新增照片"
+          }
+        }
+      }
+    },
+    "Retry backup issues": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试未完成的备份"
+          }
+        }
+      }
+    },
+    "Preparing automatic backup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在准备自动备份"
+          }
+        }
+      }
+    },
+    "Backup issues": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备份问题"
+          }
+        }
+      }
+    },
+    "Skipped": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已跳过"
+          }
+        }
+      }
+    },
+    "Paused": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已暂停"
+          }
+        }
+      }
+    },
+    "Retrying later": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍后重试"
+          }
+        }
+      }
+    },
+    "Enable automatic backup?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启自动备份？"
+          }
+        }
+      }
+    },
+    "Enable backup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启备份"
+          }
+        }
+      }
+    },
+    "Include existing photos?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含现有照片？"
+          }
+        }
+      }
+    },
+    "Back up existing photos": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备份现有照片"
+          }
+        }
+      }
+    },
+    "All accessible photos will be considered for backup. This may use significant cloud storage and network data.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将检查全部可访问照片并加入备份，可能占用较多云端空间和网络流量。"
+          }
+        }
+      }
+    },
+    "Only photos newly accessible after activation will be backed up, including older photos you import later. Your current photos are kept on this device.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅备份开启后新增或新授权的照片，也包括之后导入的旧照片。当前照片会保留在手机上。"
+          }
+        }
+      }
+    },
+    "This device backs up to the signed-in account. Deleting from Photos does not delete cloud copies.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机备份至当前登录账号，删除手机照片不会删除云端副本。"
+          }
+        }
+      }
+    },
+    "Live Photos always include their motion. Hidden photos and unsupported originals are skipped.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实况照片始终包含动态资源。隐藏照片和暂不支持的原件会跳过。"
+          }
+        }
+      }
+    },
+    "Originals may use Wi-Fi and cellular data, including downloads from iCloud.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原件可以通过 Wi-Fi 或蜂窝网络传输，也包括从 iCloud 下载。"
+          }
+        }
+      }
+    },
+    "Originals wait for Wi-Fi, including downloads from iCloud.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原件仅通过 Wi-Fi 传输，也包括从 iCloud 下载。"
+          }
+        }
+      }
+    },
+    "iOS decides when background work runs. Exact start times are not guaranteed. Reopen the app after force quitting to resume backup.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后台运行时机由 iOS 决定，无法保证准点启动。强制关闭 App 后，请重新打开以恢复备份。"
+          }
+        }
+      }
+    },
+    "Deleted cloud copies are not automatically uploaded again. Select an original manually if you want to upload it again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端主动删除的项目不会自动回传。如需重新上传，请手动选择原件。"
+          }
+        }
+      }
+    },
+    "Deleted cloud copy will not be backed up again. Choose it manually to upload again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端副本已删除，不会自动再次备份；可手动选择原件重新上传。"
+          }
+        }
+      }
+    },
+    "%lld backed up · %lld pending · %lld need attention": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已备份 %lld 项 · 待处理 %lld 项 · 需处理 %lld 项"
+          }
+        }
+      }
+    },
+    "Checking your Photos library": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在检查手机相册"
+          }
+        }
+      }
+    },
+    "Some originals need attention": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分原件需要处理"
+          }
+        }
+      }
+    },
+    "Backing up your originals": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在备份原件"
+          }
+        }
+      }
+    },
+    "Backup is up to date": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备份已更新"
+          }
+        }
+      }
+    },
+    "Review terms before backup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先确认条款再继续备份"
+          }
+        }
+      }
+    },
+    "Allow Photos access to resume backup": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许相册访问后可恢复备份"
+          }
+        }
+      }
+    },
+    "Waiting for Wi-Fi": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待 Wi-Fi"
+          }
+        }
+      }
+    },
+    "Waiting for Low Data Mode to end": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待关闭低数据模式"
+          }
+        }
+      }
+    },
+    "Waiting for Low Power Mode to end": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待关闭低电量模式"
+          }
+        }
+      }
+    },
+    "Waiting for your backup time window": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待指定备份时段"
+          }
+        }
+      }
+    },
+    "Outside the selected backup scope": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不在当前选择的备份范围内"
+          }
+        }
+      }
+    },
+    "Video backup is off": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "视频备份已关闭"
+          }
+        }
+      }
+    },
+    "Updating backup settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在更新备份设置"
+          }
+        }
+      }
+    },
+    "Finishing started backups": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在完成已开始的备份"
+          }
+        }
+      }
+    },
+    "Not enough device storage. Free some space, then retry backup.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手机可用空间不足，请释放空间后重试备份。"
+          }
+        }
+      }
+    },
+    "This original is no longer accessible in Photos.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已无法从手机相册访问这个原件。"
+          }
+        }
+      }
+    },
+    "The Live Photo motion resource is unavailable.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时无法获取这张实况照片的动态资源。"
+          }
+        }
+      }
+    },
+    "Beta diagnostics": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "测试版诊断"
+          }
+        }
+      }
+    },
+    "Export backup diagnostics": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出备份诊断"
+          }
+        }
+      }
+    },
+    "Includes device type, times, network state and backup counts. No photos or login credentials.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包含设备类型、时间、网络状态和备份数量，不含照片或登录凭据。"
+          }
+        }
+      }
+    },
+    "Cloud storage is full. Free some cloud space, then retry.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端空间不足，请释放云端空间后重试。"
+          }
+        }
+      }
+    },
+    "Too many requests. Please wait and try again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作过于频繁，请稍后重试。"
+          }
+        }
+      }
+    },
+    "PinHaoYun · Beta 0.2\nThis beta uses separate test accounts and cloud files.\nYour device's Photos library is never removed by account deletion.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PinHaoYun · 测试版 0.2\n本测试版使用独立的测试账号和云端图库。\n注销账号不会删除手机相册。"
+          }
+        }
+      }
+    },
+    "This removes the cloud original and thumbnail. Photos on your device are kept. Automatic backup will not upload this copy again; you can upload it manually.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除云端原件和缩略图，手机相册会保留。自动备份不会再次上传此副本；如需恢复，可手动上传。"
+          }
+        }
+      }
+    },
+    "New camera photos need to be added to your selection, or you can allow full Photos access in Settings.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新拍照片需要追加授权，也可以在系统设置中允许访问全部照片。"
+          }
+        }
+      }
+    },
+    "Allow access to this photo to resume its backup, or cancel this transfer.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许访问这张照片后可恢复备份，或取消此传输任务。"
+          }
+        }
+      }
+    },
+    "Another transfer is updating this item. Try again shortly.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "另一项传输正在处理相同原件，请稍后重试。"
+          }
+        }
+      }
+    },
+    "This deletes this beta's isolated test account. Production Web accounts are separate. Access stops immediately and cloud photos, videos and account data will be deleted within 30 days.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此操作注销本测试版的隔离测试账号，生产 Web 账号与其独立。登录和上传会立即停止，云端照片、视频及账号资料将在 30 天内删除。"
+          }
+        }
+      }
+    },
+    "Enter reset code": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入重设验证码"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续"
+          }
+        }
+      }
+    },
+    "Confirm new password": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再次输入新密码"
+          }
+        }
+      }
+    },
+    "The passwords do not match.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "两次输入的密码不一致。"
+          }
+        }
+      }
+    },
+    "Enter your new password twice.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入并确认新密码"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

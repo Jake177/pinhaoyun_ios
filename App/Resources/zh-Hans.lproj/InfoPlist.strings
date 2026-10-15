@@ -1,2 +1,2 @@
-"NSPhotoLibraryUsageDescription" = "选择照片、视频和实况照片原件，上传到你的私人 PinHaoYun 图库。";
+"NSPhotoLibraryUsageDescription" = "选择原件上传，或主动开启自动备份，访问你授权的照片、视频、实况照片及 iCloud 原件。";
 "NSPhotoLibraryAddUsageDescription" = "将云端照片、视频和实况照片原件保存到手机相册。";

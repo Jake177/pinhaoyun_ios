@@ -154,6 +154,8 @@ Use the implemented platform hierarchy: `.borderedProminent` for authentication,
 
 Busy form actions keep their title and show a trailing `ProgressView` after a spacer. Authentication/consent submission and sign-out disable while busy. Authentication substeps use a local NavigationStack path, system back controls, compact task titles, screen-scoped focus progression and a keyboard Done action. Long-form primary actions occupy a bottom safe-area bar. Save/export controls disable during loading or saving.
 
+Password reset has three separate tasks: email, reset code and a new password entered twice. Continue requires six digits and does not claim server verification; final save uses Cognito's combined verification/password operation. Password mismatch has inline text and prevents save. Code errors return to the code screen with a readable message; typed secrets remain in view memory and are cleared when leaving the flow.
+
 ### Inputs / Fields
 
 Native `TextField`, `SecureField`, `Toggle` and `Picker` appear in forms. Email uses an email keyboard/content type, without automatic capitalization or autocorrection. Password and code fields use matching content types; codes use the number pad. Errors are visible text or labels in separate sections. No custom field border, focus glow or radius is authored.
@@ -174,7 +176,13 @@ A media cell keeps a neutral square until a thumbnail is available; its fallback
 
 Rows preserve `TransferRecord.id` identity. A filename, readable state, monospaced uploaded/total bytes and unfinished progress remain visible. Failed rows expose an error and Retry; unfinished rows expose Cancel upload. Symbols are `checkmark.circle.fill` for completed, `exclamationmark.circle` for failed `xmark.circle` for cancelled and `arrow.up.circle` otherwise. State text accompanies the symbol.
 
-History is scoped to the signed-in owner. Normal Account sign-out cancels unfinished uploads after confirmation and keeps completed/cancelled rows associated with their original owner; another account does not see those rows.
+History is scoped to the signed-in owner and API environment. Normal Account sign-out turns backup off, cancels unfinished uploads after confirmation and keeps completed/cancelled rows associated with their original owner; another account does not see those rows.
+
+### Automatic Backup
+
+Account pushes a native grouped Form with the enable switch, readable status, content/network/time sections, Photos access/recovery actions and local diagnostics export. Default off, new assets only, videos/cellular off and no time restriction. First enable confirms scope; expanding an enabled new-only backup to existing photos confirms the larger scope. Photos access is requested during activation, not on sign-in. Limited access explains how to add future camera shots to the selection.
+
+Daily start/end pickers follow device time. Invalid equal endpoints have inline text. Status distinguishes waiting for Wi-Fi/time/permissions, retry, issues and finishing already-started work. Transfers links to the same settings and retains manual/automatic labels. Footer copy states system scheduling and force-quit limits, device/cloud deletion independence, and manual restoration after cloud deletion. Controls and typography remain system-native; no additional visual tokens are introduced.
 
 ### Empty, Loading and Recovery States
 
@@ -217,4 +225,4 @@ The original preparation session is shared only between Library and Transfers. I
 
 Photo detail uses a native UIScrollView for pinch/double-tap zoom, adjustable accessibility actions and Reset zoom. Live Photos have visible playback guidance and a button equivalent. Video item failures expose a loading retry. Media information supports filename selection and copying.
 
-Account-erasure cleanup happens only after server acceptance, using the captured owner after tokens are cleared. A rejected request retains original files, multipart progress and history. Policy reading uses optional server-provided headings and paragraphs; legacy plain text remains available and the existing consent version and wording are unchanged.
+Account-erasure cleanup happens only after server acceptance, using the captured owner after tokens are cleared. A rejected request retains original files, multipart progress and history. Policy reading uses optional server-provided headings and paragraphs; legacy plain text remains available. Beta 0.2 uses the server's updated draft version describing automatic backup, suppression records and optional local diagnostics.

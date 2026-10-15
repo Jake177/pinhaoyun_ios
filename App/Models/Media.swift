@@ -69,7 +69,8 @@ struct DeletionReceipt: Codable, Sendable {
 }
 struct DeletionStatus: Decodable, Sendable { let state: String; let requestedAt: String; let deleteBy: String; let completedAt: String? }
 struct OKResponse: Decodable, Sendable { var ok: Bool?; var userConfirmed: Bool? }
-struct UploadStart: Decodable, Sendable { let duplicate: Bool; let uploadId: String?; let key: String?; let bucket: String?; let photoId: String? }
+struct UploadStart: Decodable, Sendable { let duplicate: Bool; let uploadId: String?; let key: String?; let bucket: String?; let photoId: String?; let skipped: Bool?; let skipReason: String?; let resumed: Bool? }
+struct UploadFinish: Decodable, Sendable { let ok: Bool; let duplicate: Bool?; let photoId: String? }
 struct PartURL: Decodable, Sendable { let uploadUrl: URL }
 struct UploadedPart: Codable, Sendable { let partNumber: Int; let etag: String }
 struct UploadStatus: Decodable, Sendable { let parts: [UploadedPart]; let completed: Bool }

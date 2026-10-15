@@ -1,12 +1,13 @@
 import SwiftUI
 
 struct AuthView: View {
-    enum Mode: Hashable { case signIn, signUp, verify, reset, resetConfirm }
-    private enum Field: Hashable { case email(Mode), password(Mode), code(Mode), nickname, givenName, familyName }
+    enum Mode: Hashable { case signIn, signUp, verify, reset, resetCode, resetConfirm }
+    private enum Field: Hashable { case email(Mode), password(Mode), code(Mode), confirmation, nickname, givenName, familyName }
     @Environment(APIClient.self) private var api
     @State private var path: [Mode] = []
     @State private var email = ""
     @State private var password = ""
+    @State private var confirmationPassword = ""
     @State private var nickname = ""
     @State private var givenName = ""
     @State private var familyName = ""
@@ -23,6 +24,8 @@ struct AuthView: View {
     @State private var legal: PolicySheet?
     @State private var editedEmail = false
     @State private var editedPassword = false
+    @State private var editedConfirmation = false
+    @State private var resetCodeError: String?
     @State private var resendAfter = Date.distantPast
     @FocusState private var focus: Field?
     private var mode: Mode { path.last ?? .signIn }
@@ -36,13 +39,16 @@ struct AuthView: View {
         .sheet(item: $legal) { PolicyTextView(sheet: $0) }
         .task { await loadPolicies() }
         .onChange(of: path) { _, _ in
-            focus = nil; error = nil; password = ""; code = ""
-            editedEmail = false; editedPassword = false; agreed = false
+            focus = nil; error = nil; password = ""; confirmationPassword = ""
+            if mode != .resetCode && mode != .resetConfirm { code = "" }
+            if mode != .resetCode { resetCodeError = nil }
+            editedEmail = false; editedPassword = false; editedConfirmation = false; agreed = false
             if feedback?.mode != mode { feedback = nil }
         }
         .onChange(of: focus) { old, _ in
             if case .email(_)? = old { editedEmail = true }
             if case .password(_)? = old { editedPassword = true }
+            if old == .confirmation { editedConfirmation = true }
         }
     }
 
@@ -59,7 +65,7 @@ struct AuthView: View {
                     }.padding(.vertical, 8)
                 }.listRowBackground(Color.clear)
             }
-            if screen == .verify || screen == .resetConfirm {
+            if screen == .verify || screen == .resetCode {
                 Section {
                     Text("A verification code was sent to")
                     Text(normalizedEmail).font(.headline).textSelection(.enabled)
@@ -67,7 +73,7 @@ struct AuthView: View {
                 }
             }
             Section {
-                if screen != .verify && screen != .resetConfirm {
+                if screen == .signIn || screen == .signUp || screen == .reset {
                     TextField("Email", text: $email).textContentType(.emailAddress).keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never).autocorrectionDisabled().focused($focus, equals: .email(screen))
                         .submitLabel(screen == .reset ? .send : .next)
@@ -83,26 +89,41 @@ struct AuthView: View {
                         .submitLabel(screen == .signUp ? .next : screen == .resetConfirm ? .next : .go)
                         .onSubmit {
                             if screen == .signUp { focus = .nickname }
-                            else if screen == .resetConfirm { focus = .code(screen) }
+                            else if screen == .resetConfirm { focus = .confirmation }
                             else { submitIfReady(screen) }
                         }.accessibilityIdentifier("auth.password")
                     if screen != .signIn && editedPassword && !password.isEmpty && !AuthInput.validNewPassword(password) {
                         Text("Your password does not meet the requirements below.").font(.footnote).foregroundStyle(.red)
                     }
                 }
-                if screen == .verify || screen == .resetConfirm {
+                if screen == .resetConfirm {
+                    SecureField("Confirm new password", text: $confirmationPassword)
+                        .textContentType(.newPassword).focused($focus, equals: .confirmation).submitLabel(.go)
+                        .onSubmit { editedConfirmation = true; submitIfReady(screen) }.accessibilityIdentifier("auth.confirmPassword")
+                    if editedConfirmation && !confirmationPassword.isEmpty && password != confirmationPassword {
+                        Text("The passwords do not match.").font(.footnote).foregroundStyle(.red)
+                    }
+                }
+                if screen == .verify || screen == .resetCode {
                     TextField("Verification code", text: $code).textContentType(.oneTimeCode).keyboardType(.numberPad)
                         .focused($focus, equals: .code(screen))
-                        .onChange(of: code) { _, value in code = String(value.filter { "0123456789".contains($0) }.prefix(6)) }
+                        .onChange(of: code) { _, value in
+                            code = String(value.filter { "0123456789".contains($0) }.prefix(6))
+                            if !value.isEmpty { resetCodeError = nil }
+                        }
+                        .accessibilityIdentifier("auth.verificationCode")
+                    if let resetCodeError, screen == .resetCode {
+                        Label(resetCodeError, systemImage: "exclamationmark.circle").foregroundStyle(.red).accessibilityIdentifier("auth.resetCodeError")
+                    }
                 }
             } header: {
                 if screen == .signUp { Text("Account details") }
-                else if screen == .verify { Text("Verification code") }
-                else if screen == .resetConfirm { Text("New password and code") }
+                else if screen == .verify || screen == .resetCode { Text("Verification code") }
+                else if screen == .resetConfirm { Text("Enter your new password twice.") }
             } footer: {
                 if screen == .signUp || screen == .resetConfirm {
                     Text("Use at least 8 characters with uppercase, lowercase, a number and a symbol.")
-                } else if screen == .verify { Text("Enter the 6-digit code from your email.") }
+                } else if screen == .verify || screen == .resetCode { Text("Enter the 6-digit code from your email.") }
             }
             .disabled(busy)
 
@@ -130,7 +151,7 @@ struct AuthView: View {
                     primaryButton(screen).listRowBackground(Color.clear).listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
                 }
             }
-            if screen == .verify || screen == .resetConfirm {
+            if screen == .verify || screen == .resetCode {
                 Section {
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
                         let seconds = max(0, Int(resendAfter.timeIntervalSince(timeline.date).rounded(.up)))
@@ -194,14 +215,15 @@ struct AuthView: View {
         case .signUp: return AuthInput.validNewPassword(password) && [nickname, givenName, familyName].allSatisfy { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } && agreed && policy != nil
         case .verify: return code.count == 6
         case .reset: return true
-        case .resetConfirm: return code.count == 6 && AuthInput.validNewPassword(password)
+        case .resetCode: return code.count == 6
+        case .resetConfirm: return code.count == 6 && AuthInput.validResetPassword(password, confirmation: confirmationPassword)
         }
     }
     private func title(_ screen: Mode) -> String {
-        switch screen { case .signIn: String(localized: "Sign in"); case .signUp: String(localized: "Create an account"); case .verify: String(localized: "Verify your email"); case .reset: String(localized: "Reset password"); case .resetConfirm: String(localized: "Set a new password") }
+        switch screen { case .signIn: String(localized: "Sign in"); case .signUp: String(localized: "Create an account"); case .verify: String(localized: "Verify your email"); case .reset: String(localized: "Reset password"); case .resetCode: String(localized: "Enter reset code"); case .resetConfirm: String(localized: "Set a new password") }
     }
     private func actionTitle(_ screen: Mode) -> String {
-        switch screen { case .signIn: String(localized: "Sign in"); case .signUp: String(localized: "Create account"); case .verify: String(localized: "Verify email"); case .reset: String(localized: "Send reset code"); case .resetConfirm: String(localized: "Save new password") }
+        switch screen { case .signIn: String(localized: "Sign in"); case .signUp: String(localized: "Create account"); case .verify: String(localized: "Verify email"); case .reset: String(localized: "Send reset code"); case .resetCode: String(localized: "Continue"); case .resetConfirm: String(localized: "Save new password") }
     }
     private func loadPolicies() async {
         guard !loadingPolicy else { return }
@@ -213,6 +235,7 @@ struct AuthView: View {
     private func submitIfReady(_ screen: Mode) { if !busy && canSubmit(screen) { submit(screen) } }
     private func submit(_ screen: Mode) {
         guard !busy && canSubmit(screen) else { return }
+        if screen == .resetCode { path.append(.resetConfirm); return }
         busy = true; focus = nil; error = nil; feedback = nil
         let address = normalizedEmail, secret = password, verificationCode = code
         Task {
@@ -231,13 +254,17 @@ struct AuthView: View {
                     feedback = (.signIn, String(localized: "Email verified. You can now sign in.")); path = []
                 case .reset:
                     let _: OKResponse = try await api.request("/api/mobile/auth/forgot-password", method: "POST", body: ["email": address], authenticated: false)
-                    resendAfter = .now.addingTimeInterval(30); path = [.reset, .resetConfirm]
+                    resendAfter = .now.addingTimeInterval(30); code = ""; path.append(.resetCode)
+                case .resetCode: break
                 case .resetConfirm:
                     let _: OKResponse = try await api.request("/api/mobile/auth/confirm-forgot-password", method: "POST", body: ["email": address, "code": verificationCode, "password": secret], authenticated: false)
                     feedback = (.signIn, String(localized: "Password updated. Sign in with your new password.")); path = []
                 }
             } catch {
-                if (error as? APIError)?.code == "UserNotConfirmedException" { path = [.verify] }
+                if screen == .resetConfirm, ["CodeMismatchException", "ExpiredCodeException"].contains((error as? APIError)?.code ?? "") {
+                    code = ""; resetCodeError = error.localizedDescription; path.removeLast()
+                }
+                else if (error as? APIError)?.code == "UserNotConfirmedException" { path = [.verify] }
                 else if screen == .signIn && (error as? APIError)?.code == "NotAuthorizedException" { self.error = String(localized: "Email or password is incorrect.") }
                 else { self.error = error.localizedDescription }
             }
@@ -251,13 +278,14 @@ struct AuthView: View {
             do {
                 let endpoint = screen == .verify ? "/api/mobile/auth/resend-code" : "/api/mobile/auth/forgot-password"
                 let _: OKResponse = try await api.request(endpoint, method: "POST", body: ["email": normalizedEmail], authenticated: false)
-                resendAfter = .now.addingTimeInterval(30); feedback = (screen, String(localized: "A new code has been sent."))
+                code = ""; resetCodeError = nil; resendAfter = .now.addingTimeInterval(30); feedback = (screen, String(localized: "A new code has been sent."))
             } catch { self.error = error.localizedDescription }
         }
     }
 }
 
 enum AuthInput {
+    static func validResetPassword(_ value: String, confirmation: String) -> Bool { validNewPassword(value) && value == confirmation }
     static func validEmail(_ value: String) -> Bool {
         value.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil
     }

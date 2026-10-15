@@ -56,7 +56,7 @@ struct MediaDetailView: View {
         }
         .confirmationDialog("Delete this cloud copy?", isPresented: $confirmingDeletion, titleVisibility: .visible) {
             Button("Delete cloud copy", role: .destructive) { Task { await delete() } }
-        } message: { Text("This removes the cloud original and thumbnail. Photos on your device are kept.") }
+        } message: { Text("This removes the cloud original and thumbnail. Photos on your device are kept. Automatic backup will not upload this copy again; you can upload it manually.") }
         .sheet(item: $share) { ShareFiles(urls: $0.urls) }
         .sheet(isPresented: $details) { MediaInfoView(item: item) }
         .task { await load() }

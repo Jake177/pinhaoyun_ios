@@ -8,12 +8,15 @@
 <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
 <key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
+<key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
 <key>LSRequiresIPhoneOS</key><true/>
 <key>UILaunchScreen</key><dict/>
 <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
 <key>NSPhotoLibraryUsageDescription</key><string>Choose originals and Live Photos to upload to your private PinHaoYun library.</string>
+<key>UIBackgroundModes</key><array><string>processing</string></array>
+<key>BGTaskSchedulerPermittedIdentifiers</key><array><string>com.jake177.pinhaoyun.backup</string></array>
+<key>NSLocalNetworkUsageDescription</key><string>Connect to your local PinHaoYun development server during device testing.</string>
 <key>NSPhotoLibraryAddUsageDescription</key><string>Save your cloud originals and Live Photos to your device's Photos library.</string>
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 <key>PHAPIBaseURL</key><string>$(API_BASE_URL)</string>

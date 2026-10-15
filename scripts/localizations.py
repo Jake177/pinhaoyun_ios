@@ -125,10 +125,46 @@ strings.update({'Account details': '账号信息',
  '%lld percent zoom': '缩放至百分之 %lld',
  'Copy file name': '复制文件名'})
 
+strings.update({
+'Automatic backup':'自动备份','Automatic backup is off':'自动备份已关闭',
+'Backup content':'备份内容','Photos to back up':'备份范围','Only new photos':'仅新增照片','All accessible photos':'全部可访问照片',
+'Include videos':'包含视频','Network':'网络','Allow cellular data':'允许蜂窝网络',
+'Backup time':'备份时间','Use a daily time window':'设置每日备份时段','Start':'开始时间','End':'结束时间',
+'Choose different start and end times.':'开始和结束时间不能相同。',
+'Uses your current local time, including travel and daylight saving. Started items may finish after the window ends.':'跟随手机当地时间，包含旅行换时区及夏令时。已开始的项目可能在时段结束后完成。',
+'Photos access':'相册权限','Only your selected photos are accessible.':'只能访问你授权选择的照片。','Photos access is available.':'已获得相册访问权限。',
+'Manage selected photos':'管理已授权照片','Check for new photos':'检查新增照片','Retry backup issues':'重试未完成的备份',
+'Preparing automatic backup':'正在准备自动备份','Backup issues':'备份问题','Skipped':'已跳过','Paused':'已暂停','Retrying later':'稍后重试',
+'Enable automatic backup?':'开启自动备份？','Enable backup':'开启备份','Include existing photos?':'包含现有照片？','Back up existing photos':'备份现有照片',
+'All accessible photos will be considered for backup. This may use significant cloud storage and network data.':'将检查全部可访问照片并加入备份，可能占用较多云端空间和网络流量。',
+'Only photos newly accessible after activation will be backed up, including older photos you import later. Your current photos are kept on this device.':'仅备份开启后新增或新授权的照片，也包括之后导入的旧照片。当前照片会保留在手机上。',
+'This device backs up to the signed-in account. Deleting from Photos does not delete cloud copies.':'本机备份至当前登录账号，删除手机照片不会删除云端副本。',
+'Live Photos always include their motion. Hidden photos and unsupported originals are skipped.':'实况照片始终包含动态资源。隐藏照片和暂不支持的原件会跳过。',
+'Originals may use Wi-Fi and cellular data, including downloads from iCloud.':'原件可以通过 Wi-Fi 或蜂窝网络传输，也包括从 iCloud 下载。',
+'Originals wait for Wi-Fi, including downloads from iCloud.':'原件仅通过 Wi-Fi 传输，也包括从 iCloud 下载。',
+'iOS decides when background work runs. Exact start times are not guaranteed. Reopen the app after force quitting to resume backup.':'后台运行时机由 iOS 决定，无法保证准点启动。强制关闭 App 后，请重新打开以恢复备份。',
+'Deleted cloud copies are not automatically uploaded again. Select an original manually if you want to upload it again.':'云端主动删除的项目不会自动回传。如需重新上传，请手动选择原件。',
+'Deleted cloud copy will not be backed up again. Choose it manually to upload again.':'云端副本已删除，不会自动再次备份；可手动选择原件重新上传。',
+'%lld backed up · %lld pending · %lld need attention':'已备份 %lld 项 · 待处理 %lld 项 · 需处理 %lld 项',
+'Checking your Photos library':'正在检查手机相册','Some originals need attention':'部分原件需要处理','Backing up your originals':'正在备份原件','Backup is up to date':'备份已更新',
+'Review terms before backup':'请先确认条款再继续备份','Allow Photos access to resume backup':'允许相册访问后可恢复备份',
+'Waiting for Wi-Fi':'等待 Wi-Fi','Waiting for Low Data Mode to end':'等待关闭低数据模式','Waiting for Low Power Mode to end':'等待关闭低电量模式',
+'Waiting for your backup time window':'等待指定备份时段','Outside the selected backup scope':'不在当前选择的备份范围内','Video backup is off':'视频备份已关闭',
+'Updating backup settings':'正在更新备份设置',
+'Finishing started backups':'正在完成已开始的备份',
+'Not enough device storage. Free some space, then retry backup.':'手机可用空间不足，请释放空间后重试备份。',
+'This original is no longer accessible in Photos.':'已无法从手机相册访问这个原件。','The Live Photo motion resource is unavailable.':'暂时无法获取这张实况照片的动态资源。',
+'Beta diagnostics':'测试版诊断','Export backup diagnostics':'导出备份诊断',
+'Includes device type, times, network state and backup counts. No photos or login credentials.':'包含设备类型、时间、网络状态和备份数量，不含照片或登录凭据。',
+'Cloud storage is full. Free some cloud space, then retry.':'云端空间不足，请释放云端空间后重试。','Too many requests. Please wait and try again.':'操作过于频繁，请稍后重试。'
+})
+strings.update({"PinHaoYun · Beta 0.2\nThis beta uses separate test accounts and cloud files.\nYour device's Photos library is never removed by account deletion.": 'PinHaoYun · 测试版 0.2\n本测试版使用独立的测试账号和云端图库。\n注销账号不会删除手机相册。', 'This removes the cloud original and thumbnail. Photos on your device are kept. Automatic backup will not upload this copy again; you can upload it manually.': '删除云端原件和缩略图，手机相册会保留。自动备份不会再次上传此副本；如需恢复，可手动上传。'})
+strings.update({'New camera photos need to be added to your selection, or you can allow full Photos access in Settings.': '新拍照片需要追加授权，也可以在系统设置中允许访问全部照片。', 'Allow access to this photo to resume its backup, or cancel this transfer.': '允许访问这张照片后可恢复备份，或取消此传输任务。', 'Another transfer is updating this item. Try again shortly.': '另一项传输正在处理相同原件，请稍后重试。', "This deletes this beta's isolated test account. Production Web accounts are separate. Access stops immediately and cloud photos, videos and account data will be deleted within 30 days.": '此操作注销本测试版的隔离测试账号，生产 Web 账号与其独立。登录和上传会立即停止，云端照片、视频及账号资料将在 30 天内删除。'})
+strings.update({'Enter reset code': '输入重设验证码', 'Continue': '继续', 'Confirm new password': '再次输入新密码', 'The passwords do not match.': '两次输入的密码不一致。', 'Enter your new password twice.': '输入并确认新密码'})
 output={'sourceLanguage':'en','strings':{en:{'localizations':{'zh-Hans':{'stringUnit':{'state':'translated','value':zh}}}} for en,zh in strings.items()},'version':'1.0'}
 root=Path(__file__).resolve().parents[1]
 (root/'App/Resources/Localizable.xcstrings').write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n')
-for lang,photo,add in [('en','Choose originals and Live Photos to upload to your private PinHaoYun library.','Save your cloud originals and Live Photos to your device\'s Photos library.'),('zh-Hans','选择照片、视频和实况照片原件，上传到你的私人 PinHaoYun 图库。','将云端照片、视频和实况照片原件保存到手机相册。')]:
+for lang,photo,add in [('en','Choose originals to upload, or enable optional backup of the photos and videos you authorize, including Live Photos and iCloud originals.','Save your cloud originals and Live Photos to your device\'s Photos library.'),('zh-Hans','选择原件上传，或主动开启自动备份，访问你授权的照片、视频、实况照片及 iCloud 原件。','将云端照片、视频和实况照片原件保存到手机相册。')]:
  folder=root/f'App/Resources/{lang}.lproj';folder.mkdir(parents=True,exist_ok=True)
  (folder/'InfoPlist.strings').write_text('"NSPhotoLibraryUsageDescription" = '+json.dumps(photo,ensure_ascii=False)+';\n"NSPhotoLibraryAddUsageDescription" = '+json.dumps(add,ensure_ascii=False)+';\n')
 print(f'Wrote {len(strings)} Simplified Chinese translations.')

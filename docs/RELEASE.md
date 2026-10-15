@@ -1,4 +1,19 @@
-# Core beta validation and release
+# Core and automatic-backup beta validation
+
+## 0.2 personal-device beta — 9 October 2026
+
+- Isolated HTTPS App Runner API is deployed, with 0.5 vCPU, 1GB, maximum one instance, a health check, runtime secrets, API-only routing, signup allowlist and a CodeBuild container smoke check. Production is unchanged.
+- Automatic backup, local daily windows, limited-access guidance, account/environment ledger, bounded original preparation, automatic retry/pause/recovery, cloud-delete suppression and local diagnostics are implemented. First activation asks for scope confirmation and Photos permission; signing in does not request Photos access.
+- Current backend validation: **46 Vitest tests**, TypeScript and changed-file ESLint pass. The existing Web environment retains its workspace/build configuration; API container policy is kept in `deploy/pnpm-workspace.mobile.yaml`.
+- **15 XCTest checks pass on iPhone 12 / iOS 27.2**: 13 local regressions plus manual and automatic generated-image cloud transport. Exact original bytes/quota, concurrent resume and automatic skip after cloud deletion are included. A cloud-enabled simulator run also passes all 15 on small iOS 26.5; after adding full reconciliation for unreadable PhotoKit history, the final 13 local checks pass again (two opt-in cloud cases skip). Core tests cover midnight/DST/travel, durable baseline/settings, pause isolation, credentials during offline refresh and interrupted preparation recovery.
+- Real hosted lifecycle integration passes 16 categories: original bytes/exact quota, token/owner isolation, Web Cookie compatibility, authoritative bad-Bearer rejection, suppression, in-flight/late-event cleanup, manual restore, duplicates, lost-init response replay, concurrent duplicate finalization, completed-original lease recovery and cancellation.
+- The core auth/upload/erasure regression cycle passes again with new disposable accounts. Full partition/object/Cognito removal, anonymized receipts, immediate denial, another account's access and same-email new-subject/late-old-object isolation are verified. Existing simulator QA fixture files were preserved and restored.
+- Small-phone UI checks verify Chinese defaults/first-scope confirmation, zero queued existing assets in new-only mode, automatic PhotoKit export of a later-imported 2008 JPEG, correct capture-date library placement, time controls/waiting status, and English dark accessibility-large wrapping and scroll-reachable settings. VoiceOver and large-phone backup settings remain additional validation.
+- Personal Team signing and installation succeeded. Signing identifiers remain only in ignored local configuration. Membership and TestFlight remain deferred.
+- Build 3 splits password reset into email, code and new-password/confirmation pages. Password mismatch prevents save; incorrect/expired codes return to the code page. The agreed Cognito integration checks the code during final save, not at local Continue. Chinese small-phone checks confirm five digits keep Continue disabled, six enable it, and the next page contains two separate secure fields. No real password was entered by automation. Build 3's 13 local checks pass again on the iPhone, including empty/mismatched/case-different/weak confirmation cases; two optional cloud checks skip.
+- Authentic iCloud/Live Photo and background/network scenarios remain pending. The [physical-device acceptance record](DEVICE-ACCEPTANCE.md) explicitly separates generated transport fixtures, simulator evidence and actual hardware use. Three-day/72-hour acceptance has not started.
+
+The earlier core evidence below remains historical; it does not certify the new backup UI or hardware scheduling.
 
 ## Environment
 
@@ -7,7 +22,7 @@
 - `pinhaoyun-ios-dev` / `pinhaoyun-ios-dev-artifacts`, Sydney region, AWS profile `pinhaoyun`.
 - Existing production storage, user pool and running Web deployment have not been modified.
 
-## Confirmed evidence
+## Earlier core evidence
 
 - Backend TypeScript passes; ESLint reports zero errors and 20 pre-existing warnings; 34 Vitest tests pass, including real RSA signature, issuer, audience, expiry, token-use and cross-token identity checks.
 - Real isolated AWS integration verifies mobile sign-in/refresh/consent, legacy browser Cookie compatibility, invalid Bearer rejection, multipart resume, idempotent finalization, duplicate detection, thumbnail processing, original-byte integrity and cross-account isolation.
@@ -37,7 +52,7 @@
 - Physical iPhone verification: authentic Live Photo pair export/playback/save, iCloud-only assets, large videos, locking/backgrounding, force quit, connectivity changes, constrained data and low disk space. Simulator behavior does not establish hardware background reliability.
 - Operator/legal entity, support contact, distribution countries, final bilingual terms and actual retention review. `POLICIES_APPROVED` remains false in development; production mobile authentication refuses unapproved policy configuration.
 - If any production account has an active subscription, provide and verify the existing cancellation integration and the legally required billing-record treatment before enabling account erasure there. No new purchase flow is included in this beta.
-- Apple Developer Program / Team ID, device signing, App Store Connect record and TestFlight upload. The user currently chose local testing without membership.
+- Apple Developer Program membership, release signing, App Store Connect record and TestFlight upload. Local Personal Team signing is working; the user chose local testing without membership.
 
 ## Production rollout order
 

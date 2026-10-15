@@ -7,7 +7,10 @@ struct APIError: LocalizedError {
     let message: String
     let code: String?
     var errorDescription: String? {
+        if status == 403 && (message.lowercased().contains("storage") || message.lowercased().contains("quota")) { return String(localized: "Cloud storage is full. Free some cloud space, then retry.") }
+        if status == 429 { return String(localized: "Too many requests. Please wait and try again.") }
         switch code {
+        case "UPLOAD_IN_PROGRESS": return String(localized: "Another transfer is updating this item. Try again shortly.")
         case "UserNotConfirmedException": return String(localized: "Verify your email before signing in.")
         case "NotAuthorizedException": return String(localized: "Your email or password is incorrect, or your session has expired.")
         case "CodeMismatchException", "ExpiredCodeException": return String(localized: "The code is incorrect or has expired. Request a new one.")
@@ -70,7 +73,11 @@ private struct APIResponseFailure: Decodable { let error: String?; let code: Str
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         if http.statusCode == 401, authenticated, retry {
             do { try await refresh() }
-            catch { if generation == sessionGeneration { clearTokens() }; throw error }
+            catch {
+                if generation == sessionGeneration, let failure = error as? APIError,
+                   failure.status == 401 || ["NotAuthorizedException", "UserNotFoundException"].contains(failure.code ?? "") { clearTokens() }
+                throw error
+            }
             return try await self.request(path, method: method, body: body, authenticated: authenticated, retry: false)
         }
         guard (200..<300).contains(http.statusCode) else {
