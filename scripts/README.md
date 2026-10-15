@@ -1,0 +1,1 @@
+Build and deployment scripts use only Python 3, Node.js and the existing AWS CLI. AWS deployment always selects the `pinhaoyun` profile and Sydney region. Local environment files and deployment outputs are ignored by Git; no credentials belong in the app bundle.
