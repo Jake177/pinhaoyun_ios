@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>PinHaoYun — 拼云</title>
+  <desc>A blue cloud joined by one cyan puzzle segment. Transparent background and seam. Vector reconstruction of the selected October 2026 concept.</desc>
+  <path fill="#2874ED" d="M 310 758 H 612 V 698 C 612 678 596 664 577 664 C 549 664 527 646 527 621 C 527 594 549 576 577 576 C 604 576 615 608 644 608 C 676 608 697 586 697 556 V 492 C 697 464 716 443 742 435 C 726 329 640 252 530 252 C 423 252 335 329 316 437 C 227 431 150 501 150 592 C 150 685 223 758 310 758 Z"/>
+  <path fill="#18BED1" d="M 638 758 H 754 C 847 758 922 684 922 592 C 922 520 872 459 805 442 C 766 432 723 454 723 495 V 556 C 723 601 691 634 646 634 C 610 634 602 592 577 592 C 558 592 543 604 543 621 C 543 638 558 650 577 650 C 611 650 638 674 638 698 Z"/>
+</svg>

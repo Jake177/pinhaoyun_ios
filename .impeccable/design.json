@@ -294,26 +294,35 @@
         {
           "name": "AppIcon",
           "path": "App/Resources/Assets.xcassets/AppIcon.appiconset/icon.png",
-          "source": "Artwork/AppIcon.svg",
+          "source": "Artwork/BrandMark.svg",
           "renderer": "scripts/render-icon.mjs",
           "sizePx": [
             1024,
             1024
           ],
-          "provenance": "Embedded PNG impeccable:prompt metadata records existing vector origin and rasterization.",
-          "usage": "Opaque existing cloud-and-puzzle icon."
+          "provenance": "Hand-authored SVG reconstruction of the user-selected 2026-10-12 single-piece concept; generation prompts and reference retained under Artwork/Concepts/2026-10-12.",
+          "usage": "Opaque default Home Screen icon, transparent dark mark and grayscale tinted mark.",
+          "variants": [
+            "default",
+            "dark",
+            "tinted"
+          ]
         },
         {
           "name": "BrandMark",
           "path": "App/Resources/Assets.xcassets/BrandMark.imageset/icon.png",
-          "source": "Artwork/AppIcon.svg",
+          "source": "Artwork/BrandMark.svg",
           "renderer": "scripts/render-icon.mjs",
           "sizePx": [
             1024,
             1024
           ],
-          "provenance": "Embedded PNG impeccable:prompt metadata records existing vector origin and rasterization.",
-          "usage": "Sign-in introduction only; 48 × 48 pt, scaledToFit, accessibilityHidden(true)."
+          "provenance": "Hand-authored SVG reconstruction of the user-selected 2026-10-12 single-piece concept; generation prompts and reference retained under Artwork/Concepts/2026-10-12.",
+          "usage": "Transparent sign-in mark; adaptive light/dark colors, 48 × 48 pt, scaledToFit, accessibilityHidden(true).",
+          "variants": [
+            "default",
+            "dark"
+          ]
         }
       ],
       "localization": {

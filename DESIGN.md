@@ -198,7 +198,9 @@ The deletion receipt remains a native list with readable requested/checking/comp
 
 ### Brand Asset
 
-The AppIcon and BrandMark PNGs are 1024 × 1024 rasters of the pre-existing vector in `Artwork/AppIcon.svg`, produced by `scripts/render-icon.mjs`. Both carry origin metadata under PNG `impeccable:prompt`. The sign-in mark is decorative and accessibility-hidden. Preserve artwork and provenance; other UI icons use SF Symbols.
+The user-selected 12 October 2026 identity joins a blue cloud with one cyan puzzle segment. `Artwork/BrandMark.svg` is the transparent two-path vector master; `Artwork/BrandMark.json` records the selected imagegen concept, prompts, palette and export rules. `Artwork/AppIcon.svg` is the generated default-icon composition, with an intentional opaque background for Home Screen use.
+
+`scripts/render-icon.mjs` exports separate 1024 × 1024 PNGs: transparent default/dark BrandMark images, plus default/dark/grayscale-tinted AppIcon images. In-app marks are never flattened against a solid background. The default Home Screen icon uses a navy background and the brighter mark palette, so a fixed default appearance also avoids a white tile. Dark Home Screen art is transparent so the system background can show through. Native asset appearances choose the appropriate resource; iOS 17 retains the default fallback. The sign-in mark remains decorative and accessibility-hidden. Other UI icons use SF Symbols.
 
 ## Do's and Don'ts
 

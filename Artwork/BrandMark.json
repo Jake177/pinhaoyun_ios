@@ -1,0 +1,19 @@
+{
+  "name": "PinHaoYun 拼云",
+  "selectedConcept": "single-piece join (A2)",
+  "selectedAt": "2026-10-12",
+  "master": "Artwork/BrandMark.svg",
+  "construction": "Hand-authored two-path vector reconstruction of the user-selected raster concept, with a transparent puzzle seam.",
+  "reference": "Artwork/Concepts/2026-10-12/pinyun-a2.png",
+  "conceptTool": "image_gen built-in",
+  "prompts": "Artwork/Concepts/2026-10-12/prompts.json",
+  "palette": {
+    "default": { "blue": "#2874ED", "cyan": "#18BED1" },
+    "dark": { "blue": "#568EFF", "cyan": "#38D6DF" },
+    "tinted": { "blue": "#E4E4E4", "cyan": "#A8A8A8" },
+    "defaultIconBackground": "#10213D"
+  },
+  "exporter": "scripts/render-icon.mjs",
+  "inApp": "Transparent light/dark BrandMark assets, selected by iOS appearance.",
+  "homeScreen": "Opaque navy default icon with the brighter palette, avoiding a white tile even when Home Screen default appearance is fixed; transparent dark and grayscale tinted variants. Native system appearance selection applies."
+}
